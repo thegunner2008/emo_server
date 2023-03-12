@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     SECRET_KEY = os.getenv('SECRET_KEY', '')
     API_PREFIX = ''
     BACKEND_CORS_ORIGINS = ['*']
-    DATABASE_URL = os.getenv('SQL_DATABASE_URL', '')
+    DATABASE_URL = 'postgresql+psycopg2://postgres:140Fm993@34.124.220.216:5432/postgres'
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # Token expired after 7 days
     SECURITY_ALGORITHM = 'HS256'
     LOGGING_CONFIG_FILE = os.path.join(BASE_DIR, 'logging.ini')
