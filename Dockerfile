@@ -1,4 +1,4 @@
-FROM python:3.8.6
+FROM python:3.9.2
 
 WORKDIR /app
 
@@ -16,6 +16,6 @@ RUN chown -R app_user:app_group /app
 
 USER app_user
 
-#CMD exec gunicorn --bind :8000 --workers 1 --worker-class uvicorn.workers.UvicornWorker  --threads 8 app.main:app
+CMD exec gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+#CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
