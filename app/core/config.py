@@ -7,8 +7,8 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME = os.getenv('PROJECT_NAME', 'FASTAPI BASE')
-    SECRET_KEY = os.getenv('SECRET_KEY', '')
+    PROJECT_NAME = 'FASTAPI BASE'
+    SECRET_KEY = '123456'
     API_PREFIX = ''
     BACKEND_CORS_ORIGINS = ['*']
     DATABASE_URL = 'postgresql+psycopg2://postgres:140Fm993@34.124.220.216:5432/postgres'
