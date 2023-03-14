@@ -12,6 +12,8 @@ from app.core.config import settings
 from app.helpers.exception_handler import CustomException, http_exception_handler
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
+
+
 # Base.metadata.create_all(bind=engine)
 
 
@@ -45,3 +47,8 @@ def get_application() -> FastAPI:
 app = get_application()
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+@router.get("")
+async def get():
+    return {"message": "Health check success"}
