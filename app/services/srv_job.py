@@ -14,7 +14,7 @@ class JobService(object):
     __instance = None
 
     @staticmethod
-    def get_current_job(user_id: int) -> Union[dict[str, Any], Current]:
+    def get_current_job(user_id: int) -> dict[str, Any]:
         first_current = db.session.query(Current).filter_by(user_id=user_id).first()
         if first_current:
             db.session.query(Current).filter(Current.user_id == user_id).filter(Current.id != first_current.id).delete()

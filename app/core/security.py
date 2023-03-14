@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def create_access_token(user_id: Union[int, Any]) -> str:
+def create_access_token(user_id: int) -> str:
     expire = datetime.utcnow() + timedelta(
         seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS
     )
