@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     SECRET_KEY = '123456'
     API_PREFIX = ''
     BACKEND_CORS_ORIGINS = ['*']
-    DATABASE_URL = 'postgresql+psycopg2://postgres:140Fm993@34.124.220.216:5432/postgres'
+    DATABASE_URL = 'postgresql+psycopg2://postgres:140fm993@34.27.77.250:5432/postgres'
+    DATABASE_URL_UNIX = 'postgresql+psycopg2://postgres:140fm993@/postgres?unix_sock=/var/lib/postgresql'
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # Token expired after 7 days
     SECURITY_ALGORITHM = 'HS256'
     LOGGING_CONFIG_FILE = os.path.join(BASE_DIR, 'logging.ini')
