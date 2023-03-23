@@ -9,6 +9,9 @@ class JobBase(BaseModel):
     count: int
     url: str
     time: int
+    money: str
+    base_url: str
+    reset_time: int
 
 
 class JobCreate(JobBase):

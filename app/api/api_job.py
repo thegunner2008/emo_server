@@ -96,8 +96,11 @@ def finish(token: str, value_page: str):
 def get_job_done(current_user: User = Depends(UserService().get_current_user), params: PaginationParams = Depends()):
     user_jobs = db.session.query(UserJob).filter_by(user_id=current_user.id).all()
     job_ids = list(set([user_job.job_id for user_job in user_jobs]))
-    if job_ids:
-        _query = db.session.query(Job).filter(Job.id.in_(job_ids))
-        return paginate(Job, _query, params)
-    else:
-        return {}
+
+    _query_money = db.session.query(Job.money).filter(Job.id.in_(job_ids))
+    _money_list = [money[0] for money in _query_money]
+    _total_money = sum(_money_list)
+
+    _query = db.session.query(Job).filter(Job.id.in_(job_ids))
+
+    return {"total_money": _total_money, **paginate(Job, _query, params).dict()}
