@@ -15,7 +15,7 @@ from app.models.model_job import Job
 from fastapi_sqlalchemy import db
 from cachetools import TTLCache
 from datetime import datetime, timedelta
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 from app.services.srv_job import JobService
 from app.services.srv_user import UserService
@@ -94,13 +94,11 @@ def finish(token: str, value_page: str):
 
 @router.get("/done", dependencies=[Depends(login_required)])
 def get_job_done(current_user: User = Depends(UserService().get_current_user), params: PaginationParams = Depends()):
-    user_jobs = db.session.query(UserJob).filter_by(user_id=current_user.id).all()
-    job_ids = list(set([user_job.job_id for user_job in user_jobs]))
+    _query_total_money = db.session.query(func.sum(Job.money)).join(UserJob, Job.id == UserJob.job_id).filter(
+        UserJob.user_id == current_user.id)
+    _total_money = _query_total_money.scalar()
 
-    _query_money = db.session.query(Job.money).filter(Job.id.in_(job_ids))
-    _money_list = [money[0] for money in _query_money]
-    _total_money = sum(_money_list)
+    _query_user_jobs = db.session.query(Job, UserJob.created_at).join(UserJob, Job.id == UserJob.job_id).filter(
+        UserJob.user_id == current_user.id)
 
-    _query = db.session.query(Job).filter(Job.id.in_(job_ids))
-
-    return {"total_money": _total_money, **paginate(Job, _query, params).dict()}
+    return {"total_money": _total_money, **paginate(Job, _query_user_jobs, params).dict()}

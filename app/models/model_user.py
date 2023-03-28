@@ -15,3 +15,4 @@ class User(BareBaseModel):
     last_login = Column(DateTime)
     jobs = relationship('UserJob', back_populates='user')
     current = relationship('Current', back_populates='user', uselist=False)
+    withdraws = relationship('Withdraw', back_populates='user')

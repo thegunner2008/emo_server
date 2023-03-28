@@ -11,7 +11,6 @@ class JobBase(BaseModel):
     time: int
     money: str
     base_url: str
-    reset_time: int
 
 
 class JobCreate(JobBase):
