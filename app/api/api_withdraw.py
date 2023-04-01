@@ -43,7 +43,7 @@ def post(withdraw: WithdrawCreate, current_user: User = Depends(UserService().ge
     db.session.add(withdraw_db)
     db.session.commit()
     db.session.refresh(withdraw_db)
-    return withdraw_db
+    return DataResponse().success_response()
 
 
 @router.post("/reply", dependencies=[Depends(PermissionRequired('admin'))])

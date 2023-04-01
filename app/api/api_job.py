@@ -2,11 +2,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
+from app.enum.enum_withdraw import StatusWithdraw
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required
 from app.helpers.paging import Page, PaginationParams, paginate
 from app.helpers.token_job import create_token_job, decode_token_job, TokenJob
-from app.models import User, Current
+from app.models import User, Current, Withdraw
 from app.models.user_job import UserJob
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_job import JobItemResponse, JobCreate, JobStart
@@ -94,11 +95,17 @@ def finish(token: str, value_page: str):
 
 @router.get("/done", dependencies=[Depends(login_required)])
 def get_job_done(current_user: User = Depends(UserService().get_current_user), params: PaginationParams = Depends()):
+    current_user_id = current_user.id
     _query_total_money = db.session.query(func.sum(Job.money)).join(UserJob, Job.id == UserJob.job_id).filter(
-        UserJob.user_id == current_user.id)
+        UserJob.user_id == current_user_id)
     _total_money = _query_total_money.scalar()
 
-    _query_user_jobs = db.session.query(Job, UserJob.created_at).join(UserJob, Job.id == UserJob.job_id).filter(
-        UserJob.user_id == current_user.id)
+    _query_total_withdraw = db.session.query(func.sum(Withdraw.money)) \
+        .filter(Withdraw.user_id == current_user_id, Withdraw.status == StatusWithdraw.transferred)
+    _total_withdraw = _query_total_withdraw.scalar()
 
-    return {"total_money": _total_money, **paginate(Job, _query_user_jobs, params).dict()}
+    _query_user_jobs = db.session.query(Job, UserJob.created_at).join(UserJob, Job.id == UserJob.job_id).filter(
+        UserJob.user_id == current_user_id)
+
+    return {"total_money": _total_money, "total_withdraw": _total_withdraw or 0,
+            **paginate(Job, _query_user_jobs, params).dict()}
