@@ -98,14 +98,14 @@ def get_job_done(current_user: User = Depends(UserService().get_current_user), p
     current_user_id = current_user.id
     _query_total_money = db.session.query(func.sum(Job.money)).join(UserJob, Job.id == UserJob.job_id).filter(
         UserJob.user_id == current_user_id)
-    _total_money = _query_total_money.scalar()
+    _total_money = _query_total_money.scalar() or 0
 
     _query_total_withdraw = db.session.query(func.sum(Withdraw.money)) \
         .filter(Withdraw.user_id == current_user_id, Withdraw.status == StatusWithdraw.transferred)
-    _total_withdraw = _query_total_withdraw.scalar()
+    _total_withdraw = _query_total_withdraw.scalar() or 0
 
     _query_user_jobs = db.session.query(Job, UserJob.created_at).join(UserJob, Job.id == UserJob.job_id).filter(
         UserJob.user_id == current_user_id)
 
-    return {"total_money": _total_money, "total_withdraw": _total_withdraw or 0,
+    return {"total_money": _total_money, "total_withdraw": _total_withdraw,
             **paginate(Job, _query_user_jobs, params).dict()}

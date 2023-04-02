@@ -1,12 +1,14 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
-from app.models import User
+from app.models import User, Job
 from app.models.model_withdraw import Withdraw
+from app.models.user_job import UserJob
 from app.schemas.sche_base import DataResponse
 
 from fastapi_sqlalchemy import db
@@ -39,7 +41,18 @@ def get_all(params: PaginationParams = Depends()) -> Any:
 
 @router.post("", dependencies=[Depends(login_required)])
 def post(withdraw: WithdrawCreate, current_user: User = Depends(UserService().get_current_user)):
+    current_user_id = current_user.id
+    _query_total_money = db.session.query(func.sum(Job.money)).join(UserJob, Job.id == UserJob.job_id).filter(
+        UserJob.user_id == current_user_id)
+    _total_money = _query_total_money.scalar() or 0
+
+    _query_total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(Withdraw.user_id == current_user_id)
+    _total_withdraw = _query_total_withdraw.scalar() or 0
+    if _total_money < (_total_withdraw + withdraw.money):
+        return CustomException(http_code=400, code='400', message='Yêu cầu vượt quá tổng số tiền')
+
     withdraw_db = Withdraw(user_id=current_user.id, **withdraw.dict())
+    print(Withdraw)
     db.session.add(withdraw_db)
     db.session.commit()
     db.session.refresh(withdraw_db)
