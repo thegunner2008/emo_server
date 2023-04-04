@@ -16,9 +16,9 @@ router = APIRouter()
 def register(register_data: UserRegisterRequest) -> Any:
     try:
         exist_user = db.session.query(User).filter(
-            User.email == register_data.email or User.user_name == register_data.user_name).first()
+            (User.email == register_data.email) | (User.user_name == register_data.user_name)).first()
         if exist_user:
-            raise Exception('Email or user name already exists')
+            raise Exception('Email hoặc tên tài khoản đã tồn tại')
         register_user = UserService().register_user(register_data)
         return DataResponse().success_response(data=register_user)
     except Exception as e:
