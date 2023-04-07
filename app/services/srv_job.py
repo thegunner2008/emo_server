@@ -7,6 +7,7 @@ from app.models import Job, Current
 from app.models.user_job import UserJob
 from sqlalchemy import and_
 
+from app.redis import get_redis
 from app.schemas.sche_base import DataResponse
 
 
@@ -14,7 +15,7 @@ class JobService(object):
     __instance = None
 
     @staticmethod
-    def get_current_job(user_id: int) -> dict[str, Any]:
+    def get_current_job(device_id: str, user_id: int) -> dict[str, Any]:
         first_current = db.session.query(Current).filter_by(user_id=user_id).first()
         if first_current:
             db.session.query(Current).filter(Current.user_id == user_id).filter(Current.id != first_current.id).delete()
@@ -24,8 +25,13 @@ class JobService(object):
                     "current_id": first_current.id,
                     "job": first_current.job,
                 })
-        user_jobs = db.session.query(UserJob).filter(UserJob.user_id == user_id).all()
-        job_ids = list(set([user_job.job_id for user_job in user_jobs]))
+
+        if device_id:
+            member_jobs_id = get_redis().smembers(device_id)
+            job_ids = [int(job_id.decode('utf-8')) for job_id in member_jobs_id]
+        else:
+            user_jobs = db.session.query(UserJob).filter(UserJob.user_id == user_id).all()
+            job_ids = list(set([user_job.job_id for user_job in user_jobs]))
 
         first_job = db.session.query(Job).filter(and_(Job.id.notin_(job_ids), Job.count < Job.total)).first()
         if not first_job:
@@ -40,6 +46,7 @@ class JobService(object):
         db.session.add(current_db)
         db.session.commit()
         db.session.refresh(current_db)
+        get_redis().sadd(device_id, first_job.id)
         return DataResponse().success_response(data={
             "current_id": current_db.id,
             "job": current_db.job,

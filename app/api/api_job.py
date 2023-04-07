@@ -46,8 +46,8 @@ def post(job: JobCreate):
 
 
 @router.get("/current", dependencies=[Depends(login_required)])
-def get_current(current_user: User = Depends(UserService().get_current_user)):
-    return JobService().get_current_job(current_user.id)
+def get_current(device_id: str, current_user: User = Depends(UserService().get_current_user)):
+    return JobService().get_current_job(device_id, current_user.id)
 
 
 @router.get("/start", dependencies=[Depends(login_required)])
@@ -75,11 +75,13 @@ def finish(token: str, value_page: str):
         return CustomException(http_code=400, code='400', message="value page is not correct")
     if not cache.get(token_job.user_id):
         return CustomException(http_code=400, code='400', message=f"Time out")
+
     current_time = datetime.now()
     diff = current_time - cache.get(token_job.user_id)
     diff_int = int(diff.total_seconds())
     if not (diff_int - detal_time < job_db.time < diff_int + detal_time):
         return CustomException(http_code=400, code='400', message=f"Time out + {diff_int}")
+
     user_job_find = db.session.query(UserJob).filter(
         and_(UserJob.user_id == token_job.user_id, UserJob.job_id == token_job.job_id)).first()
     if user_job_find:
