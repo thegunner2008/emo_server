@@ -10,6 +10,7 @@ class RegisterRequest(BaseModel):
     user_name: str
     full_name: str
     password: str
+    phone: str
     role: UserRole = UserRole.GUEST
 
 

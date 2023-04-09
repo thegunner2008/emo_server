@@ -92,6 +92,7 @@ class LdService(object):
                 "full_name": form_data.full_name or value['full_name'],
                 "hashed_password": get_password_hash(form_data.password) or value['hashed_password'],
                 "role": form_data.role.value or value['role'],
+                "phone": form_data.phone or value['phone'],
             }
 
             user_ref.update(user)
@@ -106,7 +107,7 @@ class LdService(object):
     )
 
     @staticmethod
-    def get_current_user_ld(http_authorization_credentials=Depends(reusable_oauth2)) -> User:
+    def get_current_user_ld(http_authorization_credentials=Depends(reusable_oauth2)):
         """
         Decode JWT token to get user_id => return User info from DB query
         """
@@ -128,4 +129,4 @@ class LdService(object):
 
         if not value:
             raise HTTPException(status_code=404, detail="User not found")
-        return User(**value)
+        return value
