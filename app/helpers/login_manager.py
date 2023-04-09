@@ -11,8 +11,6 @@ def login_required(http_authorization_credentials=Depends(UserService().reusable
 
 
 def login_required_ld(http_authorization_credentials=Depends(UserService().reusable_oauth2)):
-    print("ooo0000o")
-
     return LdService.get_current_user_ld(http_authorization_credentials)
 
 

@@ -47,7 +47,7 @@ class LdService(object):
             device_ref = db.reference(f'device/{device_id}')
             value = device_ref.get()
             if value is not None:
-                device_ld = DeviceLd(**value, **form_data.dict())
+                device_ld = DeviceLd(**{**value, **form_data.dict()})
                 device_ref.update(device_ld.dict())
             else:
                 device_ld = DeviceLd(manager_id="1", **form_data.dict())
@@ -115,9 +115,7 @@ class LdService(object):
                 http_authorization_credentials.credentials, settings.SECRET_KEY,
                 algorithms=[settings.SECURITY_ALGORITHM]
             )
-            print(payload)
             token_data = TokenPayload(**payload)
-            print(token_data)
 
         except(jwt.PyJWTError, ValidationError):
             raise HTTPException(
@@ -127,7 +125,6 @@ class LdService(object):
 
         user_ref = db.reference(f'manager/{token_data.user_id}')
         value = user_ref.get()
-        print(value)
 
         if not value:
             raise HTTPException(status_code=404, detail="User not found")

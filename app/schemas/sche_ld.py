@@ -22,7 +22,7 @@ class DeviceLd(BaseModel):
 
 
 class LdRequest(BaseModel):
-    manager_id: int = 0
+    manager_id: int = 1
     device_id: str = ''
 
 
