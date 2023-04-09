@@ -73,11 +73,11 @@ class LdService(object):
                 if 'hashed_password' not in value or not value['hashed_password']:
                     value['hashed_password'] = get_password_hash(password)
                     manager_ref.child(key).update(value)
-                user = User(id=key, is_active=True, **value)
+                user = {"id": key, **value}
 
         if not user:
             return None
-        if not verify_password(password, user.hashed_password):
+        if not verify_password(password, user['hashed_password']):
             return None
         return user
 

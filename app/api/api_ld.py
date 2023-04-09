@@ -24,13 +24,12 @@ def login_access_token(form_data: LoginRequest):
     user = LdService.authenticate(email=form_data.userName, password=form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail='Incorrect email or password')
-    elif not user.is_active:
-        raise HTTPException(status_code=401, detail='Inactive user')
 
     return DataResponse().success_response({
-        'accessToken': create_access_token(user_id=user.id),
+        'accessToken': create_access_token(user_id=user['id']),
         'user': user,
     })
+
 
 @router.post('/update', dependencies=[Depends(login_required_ld)])
 def update(form_data: LdUpdate,
