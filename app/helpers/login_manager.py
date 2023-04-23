@@ -24,3 +24,15 @@ class PermissionRequired:
         if self.user.role not in self.permissions and self.permissions:
             raise HTTPException(status_code=400,
                                 detail=f'User {self.user.email} can not access this api')
+
+
+class PermissionRequiredLd:
+    def __init__(self, *args):
+        self.user = None
+        self.permissions = args
+
+    def __call__(self, user=Depends(login_required_ld)):
+        self.user = user
+        if self.user.get('role', 'guest') not in self.permissions and self.permissions:
+            raise HTTPException(status_code=400,
+                                detail=f'User {self.user.email} can not access this api')

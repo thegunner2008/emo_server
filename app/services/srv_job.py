@@ -26,7 +26,7 @@ class JobService(object):
                     "job": first_current.job,
                 })
 
-        if device_id:
+        if device_id and device_id != "unknown":
             member_jobs_id = get_redis().smembers(device_id)
             job_ids = [int(job_id.decode('utf-8')) for job_id in member_jobs_id]
         else:

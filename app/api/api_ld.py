@@ -1,13 +1,12 @@
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
 
 from app.api.api_login import LoginRequest
 from app.core.security import create_access_token
-from app.helpers.login_manager import PermissionRequired, login_required, login_required_ld
+from app.helpers.login_manager import login_required_ld, PermissionRequiredLd
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_ld import LdUpdate, LdRequest, RegisterRequest
+from app.schemas.sche_ld import LdUpdate, LdRequest, RegisterRequest, LdTransfer, LdPayment
 from app.services.srv_ld import LdService
 from app.schemas.sche_token import Token
 
@@ -36,6 +35,16 @@ def update(form_data: LdUpdate,
            device_id: str = Query(..., description="The device to update the LD for")
            ):
     return LdService.update_ld(device_id=device_id, form_data=form_data)
+
+
+@router.post('/transfer', dependencies=[Depends(login_required_ld)])
+def transfer(form_data: LdTransfer):
+    return LdService.transfer_ld(from_id=form_data.from_id, to_id=form_data.to_id)
+
+
+@router.post('/payment', dependencies=[Depends(PermissionRequiredLd("admin"))])
+def transfer(form_data: LdPayment):
+    return LdService.pay_ld(device_id=form_data.device_id, add_time=form_data.add_time)
 
 
 @router.post('/register')

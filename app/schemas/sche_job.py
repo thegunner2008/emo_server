@@ -31,3 +31,9 @@ class JobStart(JobBase):
     id: int
     user_id: int
     current_id: int
+
+
+class JobFinish(BaseModel):
+    token: str
+    value_page: str
+    imei: str

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import time
 
 from app.helpers.enums import UserRole
+from app.helpers.time_int import now_int, add_time
 
 
 class RegisterRequest(BaseModel):
@@ -16,10 +17,11 @@ class RegisterRequest(BaseModel):
 
 class DeviceLd(BaseModel):
     name: Optional[str] = ''
-    start: int = int(time.mktime(datetime.now().timetuple()))
-    exp: int = int(time.mktime((datetime.now() + timedelta(days=7)).timetuple()))
+    start: int = now_int()
+    exp: int = add_time(datetime.now(), timedelta(days=7))
+    paid_time: int = exp
     type: str = 'Free'
-    manager_id: str
+    manager_id: str = "1"
 
 
 class LdRequest(BaseModel):
@@ -28,6 +30,17 @@ class LdRequest(BaseModel):
 
 
 class LdUpdate(BaseModel):
-    exp: int
-    name: str
-    type: str
+    exp: int = None
+    name: str = None
+    type: str = None
+    manager_id: str = None
+
+
+class LdTransfer(BaseModel):
+    from_id: int
+    to_id: int
+
+
+class LdPayment(BaseModel):
+    device_id: str
+    add_time: int

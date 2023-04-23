@@ -3,15 +3,17 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_sqlalchemy import db
+from sqlalchemy.orm import joinedload, contains_eager
 
 from app.core.security import encode_password
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
+from app.models.user_job import UserJob
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_user import UserItemResponse, UserCreateRequest, UserUpdateMeRequest, UserUpdateRequest
 from app.services.srv_user import UserService
-from app.models import User
+from app.models import User, Current
 from starlette.requests import Request
 
 logger = logging.getLogger()
@@ -24,7 +26,9 @@ def get(params: PaginationParams = Depends()) -> Any:
     API Get list User
     """
     try:
-        _query = db.session.query(User)
+        _query = db.session.query(User).options(
+            joinedload(User.jobs)
+        )
         users = paginate(model=User, query=_query, params=params)
         return users
     except Exception as e:
@@ -72,15 +76,21 @@ def update_me(user_data: UserUpdateMeRequest,
         raise CustomException(http_code=400, code='400', message=str(e))
 
 
-@router.get("/{user_id}", dependencies=[Depends(login_required)], response_model=DataResponse[UserItemResponse])
+@router.get("/{user_id}", dependencies=[Depends(login_required)])
 def detail(user_id: int) -> Any:
     """
     API get Detail User
     """
     try:
-        exist_user = db.session.query(User).get(user_id)
+        exist_user = db.session.query(User).options(
+            joinedload(User.current).joinedload(Current.job),
+            joinedload(User.jobs).joinedload(UserJob.job),
+            joinedload(User.withdraws)
+        ).filter(User.id == user_id).first()
+
         if exist_user is None:
             raise Exception('User already exists')
+
         return DataResponse().success_response(data=exist_user)
     except Exception as e:
         raise CustomException(http_code=400, code='400', message=str(e))

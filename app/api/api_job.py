@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.enum.enum_withdraw import StatusWithdraw
 from app.helpers.exception_handler import CustomException
@@ -10,13 +10,13 @@ from app.helpers.token_job import create_token_job, decode_token_job, TokenJob
 from app.models import User, Current, Withdraw
 from app.models.user_job import UserJob
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobItemResponse, JobCreate, JobStart
+from app.schemas.sche_job import JobItemResponse, JobCreate, JobStart, JobFinish
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
 from cachetools import TTLCache
 from datetime import datetime, timedelta
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, update
 
 from app.services.srv_job import JobService
 from app.services.srv_user import UserService
@@ -64,14 +64,14 @@ def start(job_id: int, current_id: int, current_user: User = Depends(UserService
     })
 
 
-@router.get("/finish")
-def finish(token: str, value_page: str):
-    token_job = decode_token_job(token=token)
+@router.post("/finish")
+def finish(request: Request, job_finish: JobFinish):
+    token_job = decode_token_job(token=job_finish.token)
     job_db = db.session.query(Job).filter_by(id=token_job.job_id).first()
     current_db = db.session.query(Current).filter_by(id=token_job.current_id).first()
     if not job_db or not current_db:
         return CustomException(http_code=400, code='400', message="job or current not found")
-    if value_page != job_db.value_page:
+    if job_finish.value_page != job_db.value_page:
         return CustomException(http_code=400, code='400', message="value page is not correct")
     if not cache.get(token_job.user_id):
         return CustomException(http_code=400, code='400', message=f"Time out")
@@ -82,15 +82,20 @@ def finish(token: str, value_page: str):
     if not (diff_int - detal_time < job_db.time < diff_int + detal_time):
         return CustomException(http_code=400, code='400', message=f"Time out + {diff_int}")
 
-    user_job_find = db.session.query(UserJob).filter(
-        and_(UserJob.user_id == token_job.user_id, UserJob.job_id == token_job.job_id)).first()
-    if user_job_find:
-        return CustomException(http_code=400, code='400', message="Done before")
-    user_job = UserJob(user_id=token_job.user_id, job_id=token_job.job_id)
+    # user_job_find = db.session.query(UserJob).filter(
+    #     and_(UserJob.user_id == token_job.user_id, UserJob.job_id == token_job.job_id)).first()
+    # if user_job_find:
+    #     return CustomException(http_code=400, code='400', message="Done before")
+    user_job = UserJob(user_id=token_job.user_id, job_id=token_job.job_id, ip=request.client.host, imei=job_finish.imei)
     db.session.add(user_job)
     db.session.delete(current_db)
     db.session.commit()
     db.session.refresh(user_job)
+
+    # Update the count column of Job
+    stmt = update(Job).where(Job.id == user_job.job_id).values(count=Job.count + 1)
+    db.session.execute(stmt)
+    db.session.commit()
 
     return DataResponse().success_response(data=user_job)
 

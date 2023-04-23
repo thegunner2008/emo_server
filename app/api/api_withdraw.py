@@ -2,6 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
@@ -32,7 +33,9 @@ def get(params: PaginationParams = Depends(), current_user: User = Depends(UserS
 @router.get("/all", dependencies=[Depends(PermissionRequired('admin'))])
 def get_all(params: PaginationParams = Depends()) -> Any:
     try:
-        _query = db.session.query(Withdraw)
+        _query = db.session.query(Withdraw).options(
+            joinedload(Withdraw.user)
+        )
         withdraws = paginate(model=Withdraw, query=_query, params=params)
         return withdraws
     except Exception as e:

@@ -26,6 +26,9 @@ class LdService(object):
 
     @classmethod
     def create_new_ld(cls, device_id: str, manager_id: int):
+        """
+        Send from Device, not from manager
+        """
         try:
             device_ref = db.reference(f'device/{device_id}')
             value = device_ref.get()
@@ -47,11 +50,49 @@ class LdService(object):
             device_ref = db.reference(f'device/{device_id}')
             value = device_ref.get()
             if value is not None:
-                device_ld = DeviceLd(**{**value, **form_data.dict()})
+                filtered_form_data = {k: v for k, v in form_data.dict().items() if v is not None}
+                device_ld = DeviceLd(**{**value, **filtered_form_data})
                 device_ref.update(device_ld.dict())
             else:
                 device_ld = DeviceLd(manager_id="1", **form_data.dict())
                 device_ref.update(device_ld.dict())
+
+            return DataResponse().success_response(data=device_ld)
+        except Exception as e:
+            msg = 'Firebase exception: {}'.format(str(e))
+            raise CustomException(message=msg)
+
+    @classmethod
+    def transfer_ld(cls, from_id: int, to_id: int):
+        try:
+            from_ref = db.reference(f'device/{from_id}')
+            from_value = from_ref.get()
+            to_ref = db.reference(f'device/{to_id}')
+            to_value = to_ref.get()
+            if from_value is not None:
+                to_value = DeviceLd(
+                    manager_id=from_value.get("manager_id", "1")).dict() if to_value is None else to_value
+                from_ref.update(to_value)
+                to_ref.update(from_value)
+                return DataResponse().success_response(data=to_value)
+            else:
+                return CustomException(http_code=400, code='400', message="Không tìm thấy thiết bị")
+        except Exception as e:
+            msg = 'Firebase exception: {}'.format(str(e))
+            raise CustomException(message=msg)
+
+    @classmethod
+    def pay_ld(cls, device_id: str, add_time: int):
+        print(f"pay_ld {device_id} {add_time}")
+        try:
+            device_ref = db.reference(f'device/{device_id}')
+            value = device_ref.get()
+            if value is not None:
+                device_ld = DeviceLd(**{**value})
+                paid_time = device_ld.paid_time + add_time
+                device_ref.update({**device_ld.dict(), 'paid_time': paid_time})
+            else:
+                return CustomException(http_code=400, code='400', message="Không tìm thấy thiết bị")
 
             return DataResponse().success_response(data=device_ld)
         except Exception as e:

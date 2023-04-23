@@ -3,7 +3,7 @@ from pydantic import BaseModel, conint
 from abc import ABC, abstractmethod
 from typing import Optional, Generic, Sequence, Type, TypeVar
 
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, or_
 from sqlalchemy.orm import Query
 from pydantic.generics import GenericModel
 from contextvars import ContextVar
@@ -22,6 +22,8 @@ class PaginationParams(BaseModel):
     page: Optional[conint(gt=0)] = 1
     sort_by: Optional[str] = 'id'
     order: Optional[str] = 'desc'
+    search_by: Optional[str] = None
+    key_search: Optional[str] = None
 
 
 class BasePage(ResponseSchemaBase, GenericModel, Generic[T], ABC):
@@ -58,6 +60,11 @@ def paginate(model, query: Query, params: Optional[PaginationParams]) -> BasePag
 
     try:
         total = query.count()
+
+        if params.search_by and params.key_search:
+            search_column = getattr(model, params.search_by, None)
+            if search_column is not None:
+                query = query.filter(search_column.ilike(f"%{params.key_search}%"))
 
         if params.order:
             direction = desc if params.order == 'desc' else asc
