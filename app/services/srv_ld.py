@@ -82,14 +82,13 @@ class LdService(object):
             raise CustomException(message=msg)
 
     @classmethod
-    def pay_ld(cls, device_id: str, add_time: int):
-        print(f"pay_ld {device_id} {add_time}")
+    def pay_ld(cls, device_id: str, paid_time: int):
         try:
             device_ref = db.reference(f'device/{device_id}')
             value = device_ref.get()
             if value is not None:
                 device_ld = DeviceLd(**{**value})
-                paid_time = device_ld.paid_time + add_time
+                paid_time = paid_time
                 device_ref.update({**device_ld.dict(), 'paid_time': paid_time})
             else:
                 return CustomException(http_code=400, code='400', message="Không tìm thấy thiết bị")

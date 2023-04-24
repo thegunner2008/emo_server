@@ -43,4 +43,4 @@ class LdTransfer(BaseModel):
 
 class LdPayment(BaseModel):
     device_id: str
-    add_time: int
+    paid_time: int

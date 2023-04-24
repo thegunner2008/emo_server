@@ -44,7 +44,7 @@ def transfer(form_data: LdTransfer):
 
 @router.post('/payment', dependencies=[Depends(PermissionRequiredLd("admin"))])
 def transfer(form_data: LdPayment):
-    return LdService.pay_ld(device_id=form_data.device_id, add_time=form_data.add_time)
+    return LdService.pay_ld(device_id=form_data.device_id, paid_time=form_data.paid_time)
 
 
 @router.post('/register')
