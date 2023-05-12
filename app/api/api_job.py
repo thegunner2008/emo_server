@@ -10,7 +10,7 @@ from app.helpers.token_job import create_token_job, decode_token_job, TokenJob
 from app.models import User, Current, Withdraw
 from app.models.user_job import UserJob
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobItemResponse, JobCreate, JobStart, JobFinish
+from app.schemas.sche_job import JobItemResponse, JobCreate, JobStart, JobFinish, JobBase, JobUpdate
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
@@ -43,6 +43,35 @@ def post(job: JobCreate):
     db.session.commit()
     db.session.refresh(job_db)
     return job_db
+
+
+@router.put("/{job_id}")
+def put(job_id: int, job_update: JobUpdate):
+    print(f"job {job_id}")
+    job_db = db.session.query(Job).get(job_id)
+
+    print(f"job {job_db}")
+
+    if job_db:
+        job_data = job_update.dict(exclude_unset=True)
+        for key, value in job_data.items():
+            setattr(job_db, key, value)
+        db.session.merge(job_db)
+        db.session.commit()
+        return DataResponse().success_response("Thành công")
+    else:
+        raise CustomException(http_code=404, code='404', message="Không tìm thấy dữ liệu")
+
+
+@router.delete("")
+def delete(job_id: int):
+    job_db = db.session.query(Job).get(job_id)
+    if job_db:
+        db.session.delete(job_db)
+        db.session.commit()
+        return DataResponse().success_response("Thành công")
+    else:
+        return CustomException(http_code=400, code='400', message="Không tìm thấy dữ liệu")
 
 
 @router.get("/current", dependencies=[Depends(login_required)])

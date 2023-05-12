@@ -51,5 +51,4 @@ def transfer(form_data: LdPayment):
 def update_me(form_data: RegisterRequest,
               user_id: str = Query(..., description="The user_id to update the LD for")
               ):
-    print(form_data)
     return LdService.update_account(user_id=user_id, form_data=form_data)

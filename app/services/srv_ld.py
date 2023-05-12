@@ -36,7 +36,6 @@ class LdService(object):
                 return DataResponse().success_response(data=value)
             else:
                 device_ld = DeviceLd(manager_id=manager_id, device_id=device_id)
-                print(device_ld.dict())
                 device_ref.update(device_ld.dict())
 
             return DataResponse().success_response(data=device_ld)

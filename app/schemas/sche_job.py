@@ -19,6 +19,12 @@ class JobCreate(JobBase):
     pass
 
 
+class JobUpdate(BaseModel):
+    total: int
+    time: int
+    money: str
+
+
 class JobItemResponse(JobBase):
     id: int
 
