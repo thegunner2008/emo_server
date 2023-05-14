@@ -34,7 +34,6 @@ class JobService(object):
             user_jobs = db.session.query(UserJob).filter(UserJob.user_id == user_id).all()
             job_ids = list(set([user_job.job_id for user_job in user_jobs]))
 
-        tomorrow = datetime.now() + timedelta(days=1)
         first_job = db.session.query(Job).filter(
             and_(Job.id.notin_(job_ids), Job.count < Job.total,
                  or_(Job.finish_at >= datetime.now(), Job.finish_at.is_(None)))).first()

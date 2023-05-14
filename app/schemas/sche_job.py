@@ -33,6 +33,8 @@ class JobItemResponse(JobBase):
     finish_at: Optional[datetime]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+    key_page: str
+    value_page: str
 
     # users = relationship("User")
     class Config:
