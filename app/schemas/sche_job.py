@@ -25,6 +25,7 @@ class JobUpdate(BaseModel):
     total: int
     time: int
     money: str
+    url: str
     finish_at: Optional[datetime]
 
 
