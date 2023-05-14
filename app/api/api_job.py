@@ -47,11 +47,7 @@ def post(job: JobCreate):
 
 @router.put("/{job_id}")
 def put(job_id: int, job_update: JobUpdate):
-    print(f"job {job_id}")
     job_db = db.session.query(Job).get(job_id)
-
-    print(f"job {job_db}")
-
     if job_db:
         job_data = job_update.dict(exclude_unset=True)
         for key, value in job_data.items():
@@ -100,7 +96,7 @@ def finish(request: Request, job_finish: JobFinish):
     current_db = db.session.query(Current).filter_by(id=token_job.current_id).first()
     if not job_db or not current_db:
         return CustomException(http_code=400, code='400', message="job or current not found")
-    if job_finish.value_page != job_db.value_page:
+    if job_finish.value_page != job_db.value_page or job_db.value_page is None:
         return CustomException(http_code=400, code='400', message="value page is not correct")
     if not cache.get(token_job.user_id):
         return CustomException(http_code=400, code='400', message=f"Time out")

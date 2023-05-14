@@ -1,8 +1,4 @@
-from sqlalchemy import Table, Integer, ForeignKey, Column
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.ext.associationproxy import association_proxy
-
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.models.model_base import BareBaseModel

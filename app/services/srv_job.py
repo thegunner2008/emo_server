@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Dict, Any, Union
 
 from fastapi_sqlalchemy import db
@@ -5,7 +6,7 @@ from fastapi_sqlalchemy import db
 from app.helpers.exception_handler import CustomException
 from app.models import Job, Current
 from app.models.user_job import UserJob
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 
 from app.redis import get_redis
 from app.schemas.sche_base import DataResponse
@@ -33,7 +34,10 @@ class JobService(object):
             user_jobs = db.session.query(UserJob).filter(UserJob.user_id == user_id).all()
             job_ids = list(set([user_job.job_id for user_job in user_jobs]))
 
-        first_job = db.session.query(Job).filter(and_(Job.id.notin_(job_ids), Job.count < Job.total)).first()
+        tomorrow = datetime.now() + timedelta(days=1)
+        first_job = db.session.query(Job).filter(
+            and_(Job.id.notin_(job_ids), Job.count < Job.total,
+                 or_(Job.finish_at >= datetime.now(), Job.finish_at.is_(None)))).first()
         if not first_job:
             return DataResponse().success_response(data={
                 "current_id": -1,

@@ -16,5 +16,6 @@ class Job(BareBaseModel):
     value_page = Column(String, nullable=False)
     time = Column(Integer, nullable=False)
     money = Column(Integer, nullable=False)
+    finish_at = Column(DateTime, nullable=True, default=None)
     users = relationship("UserJob", back_populates='job')
     current = relationship("Current", back_populates='job', uselist=False)

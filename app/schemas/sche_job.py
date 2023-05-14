@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
@@ -16,6 +17,7 @@ class JobBase(BaseModel):
 class JobCreate(JobBase):
     key_page: str
     value_page: str
+    finish_at: Optional[datetime]
     pass
 
 
@@ -23,10 +25,14 @@ class JobUpdate(BaseModel):
     total: int
     time: int
     money: str
+    finish_at: Optional[datetime]
 
 
 class JobItemResponse(JobBase):
     id: int
+    finish_at: Optional[datetime]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
 
     # users = relationship("User")
     class Config:
