@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     SECRET_KEY = '123456'
     API_PREFIX = ''
     BACKEND_CORS_ORIGINS = ['*']
-    DATABASE_URL = url1
+    DATABASE_URL = url
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # Token expired after 7 days
     SECURITY_ALGORITHM = 'HS256'
     LOGGING_CONFIG_FILE = os.path.join(BASE_DIR, 'logging.ini')
