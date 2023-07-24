@@ -6,7 +6,7 @@ from app.api.api_login import LoginRequest
 from app.core.security import create_access_token
 from app.helpers.login_manager import login_required_ld, PermissionRequiredLd
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_ld import LdUpdate, LdRequest, RegisterRequest, LdTransfer, LdPayment
+from app.schemas.sche_ld import LdUpdate, LdRequest, RegisterRequest, LdTransfer, LdPayment, LdPaymentAll
 from app.services.srv_ld import LdService
 from app.schemas.sche_token import Token
 
@@ -42,9 +42,14 @@ def transfer(form_data: LdTransfer):
     return LdService.transfer_ld(from_id=form_data.from_id, to_id=form_data.to_id)
 
 
-@router.post('/payment', dependencies=[Depends(PermissionRequiredLd("admin"))])
-def transfer(form_data: LdPayment):
-    return LdService.pay_ld(device_id=form_data.device_id, paid_time=form_data.paid_time)
+@router.post('/payment', dependencies=[Depends(login_required_ld)])
+def payment(form_data: LdPayment):
+    return LdService.pay_ld(device_id=form_data.device_id)
+
+
+@router.post('/payment_all', dependencies=[Depends(PermissionRequiredLd("admin"))])
+def payment_all(form_data: LdPaymentAll):
+    return LdService.pay_all_ld(device_ids=form_data.device_ids)
 
 
 @router.post('/register')

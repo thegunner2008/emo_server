@@ -81,18 +81,32 @@ class LdService(object):
             raise CustomException(message=msg)
 
     @classmethod
-    def pay_ld(cls, device_id: str, paid_time: int):
+    def pay_ld(cls, device_id: str):
         try:
             device_ref = db.reference(f'device/{device_id}')
             value = device_ref.get()
             if value is not None:
                 device_ld = DeviceLd(**{**value})
-                paid_time = paid_time
-                device_ref.update({**device_ld.dict(), 'paid_time': paid_time})
+                device_ref.update({**device_ld.dict(), 'debt_month': 0})
             else:
                 return CustomException(http_code=400, code='400', message="Không tìm thấy thiết bị")
 
             return DataResponse().success_response(data=device_ld)
+        except Exception as e:
+            msg = 'Firebase exception: {}'.format(str(e))
+            raise CustomException(message=msg)
+
+    @classmethod
+    def pay_all_ld(cls, device_ids: list):
+        try:
+            devices_ref = db.reference(f'device')
+            for device_id in device_ids:
+                device_ref = devices_ref.child(device_id)
+                value = device_ref.get()
+                if value is not None:
+                    device_ld = DeviceLd(**{**value})
+                    device_ref.update({**device_ld.dict(), 'debt_month': 0})
+            return DataResponse().success_response("")
         except Exception as e:
             msg = 'Firebase exception: {}'.format(str(e))
             raise CustomException(message=msg)

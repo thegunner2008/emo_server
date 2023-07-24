@@ -19,7 +19,7 @@ class DeviceLd(BaseModel):
     name: Optional[str] = ''
     start: int = now_int()
     exp: int = add_time(datetime.now(), timedelta(days=7))
-    paid_time: int = exp
+    debt_month: int = 0
     type: str = 'Free'
     manager_id: str = "1"
 
@@ -34,6 +34,7 @@ class LdUpdate(BaseModel):
     name: str = None
     type: str = None
     manager_id: str = None
+    debt_month: int = None
 
 
 class LdTransfer(BaseModel):
@@ -43,4 +44,7 @@ class LdTransfer(BaseModel):
 
 class LdPayment(BaseModel):
     device_id: str
-    paid_time: int
+
+
+class LdPaymentAll(BaseModel):
+    device_ids: list
