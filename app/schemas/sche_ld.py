@@ -18,21 +18,25 @@ class RegisterRequest(BaseModel):
 class DeviceLd(BaseModel):
     name: Optional[str] = ''
     start: int = now_int()
-    exp: int = add_time(datetime.now(), timedelta(days=7))
+    exp: int = add_time(datetime.now(), timedelta(days=1))
     debt_month: int = 0
-    type: str = 'Free'
-    manager_id: str = "1"
+    is_free: bool = True
+    manager_id: str = "0"
 
 
 class LdRequest(BaseModel):
-    manager_id: int = 1
+    manager_id: int = 0
+    device_id: str = ''
+
+
+class LdExtendFree(BaseModel):
     device_id: str = ''
 
 
 class LdUpdate(BaseModel):
     exp: int = None
     name: str = None
-    type: str = None
+    is_free: bool = True
     manager_id: str = None
     debt_month: int = None
 

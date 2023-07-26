@@ -1,9 +1,11 @@
+from datetime import timedelta, datetime
+
 import firebase_admin
 import jwt
 from firebase_admin import credentials, db
 from app.core.security import verify_password, get_password_hash
 from app.helpers.exception_handler import CustomException
-from app.models import User
+from app.helpers.time_int import add_time, delta_time_int
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_ld import DeviceLd, LdUpdate, RegisterRequest
 from fastapi import Depends, HTTPException
@@ -53,7 +55,25 @@ class LdService(object):
                 device_ld = DeviceLd(**{**value, **filtered_form_data})
                 device_ref.update(device_ld.dict())
             else:
-                device_ld = DeviceLd(manager_id="1", **form_data.dict())
+                device_ld = DeviceLd(**form_data.dict())
+                device_ref.update(device_ld.dict())
+
+            return DataResponse().success_response(data=device_ld)
+        except Exception as e:
+            msg = 'Firebase exception: {}'.format(str(e))
+            raise CustomException(message=msg)
+
+    @classmethod
+    def extend_free(cls, device_id: str):
+        try:
+            device_ref = db.reference(f'device/{device_id}')
+            value = device_ref.get()
+            if value is not None:
+                device_ld = DeviceLd({**value})
+                device_ld.exp += delta_time_int(timedelta(days=7))
+                device_ref.update(device_ld.dict())
+            else:
+                device_ld = DeviceLd(exp=add_time(datetime.now(), timedelta(days=7)))
                 device_ref.update(device_ld.dict())
 
             return DataResponse().success_response(data=device_ld)

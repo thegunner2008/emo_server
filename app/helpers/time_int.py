@@ -8,3 +8,7 @@ def now_int():
 
 def add_time(start: datetime, delta_time: timedelta):
     return int(time.mktime((start + delta_time).timetuple()))
+
+
+def delta_time_int(delta_time: timedelta):
+    return int(delta_time.total_seconds())

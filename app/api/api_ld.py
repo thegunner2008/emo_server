@@ -6,7 +6,7 @@ from app.api.api_login import LoginRequest
 from app.core.security import create_access_token
 from app.helpers.login_manager import login_required_ld, PermissionRequiredLd
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_ld import LdUpdate, LdRequest, RegisterRequest, LdTransfer, LdPayment, LdPaymentAll
+from app.schemas.sche_ld import LdUpdate, LdRequest, RegisterRequest, LdTransfer, LdPayment, LdPaymentAll, LdExtendFree
 from app.services.srv_ld import LdService
 from app.schemas.sche_token import Token
 
@@ -28,6 +28,11 @@ def login_access_token(form_data: LoginRequest):
         'accessToken': create_access_token(user_id=user['id']),
         'user': user,
     })
+
+
+@router.post('/extend_free', dependencies=[Depends(login_required_ld)])
+def post(form_data: LdExtendFree):
+    return LdService.extend_free(device_id=form_data.device_id)
 
 
 @router.post('/update', dependencies=[Depends(login_required_ld)])
