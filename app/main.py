@@ -14,7 +14,7 @@ from app.helpers.exception_handler import CustomException, http_exception_handle
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
 
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 
 def get_application() -> FastAPI:

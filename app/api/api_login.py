@@ -18,7 +18,7 @@ class LoginRequest(BaseModel):
     password: str = 'secret123'
 
 
-@router.get("/get_all_users", dependencies=[Depends(PermissionRequired('admin'))])
+@router.get("/get_all_users")
 def get_all_users():
     return UserService().get_all_users()
 

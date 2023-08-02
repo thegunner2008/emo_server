@@ -35,7 +35,7 @@ def get(params: PaginationParams = Depends()) -> Any:
         return CustomException(http_code=400, code='400', message=str(e))
 
 
-@router.post("", dependencies=[Depends(PermissionRequired('admin'))], response_model=DataResponse[UserItemResponse])
+@router.post("", response_model=DataResponse[UserItemResponse])
 def create(user_data: UserCreateRequest) -> Any:
     """
     API Create User

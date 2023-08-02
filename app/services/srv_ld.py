@@ -42,7 +42,7 @@ class LdService(object):
 
             return DataResponse().success_response(data=device_ld)
         except Exception as e:
-            msg = 'Firebase exception: {}'.format(str(e))
+            msg = 'emo exception: {}'.format(str(e))
             raise CustomException(message=msg)
 
     @classmethod
@@ -60,7 +60,7 @@ class LdService(object):
 
             return DataResponse().success_response(data=device_ld)
         except Exception as e:
-            msg = 'Firebase exception: {}'.format(str(e))
+            msg = 'emo exception: {}'.format(str(e))
             raise CustomException(message=msg)
 
     @classmethod
@@ -69,7 +69,7 @@ class LdService(object):
             device_ref = db.reference(f'device/{device_id}')
             value = device_ref.get()
             if value is not None:
-                device_ld = DeviceLd({**value})
+                device_ld = DeviceLd(**value)
                 device_ld.exp += delta_time_int(timedelta(days=7))
                 device_ref.update(device_ld.dict())
             else:
@@ -78,7 +78,7 @@ class LdService(object):
 
             return DataResponse().success_response(data=device_ld)
         except Exception as e:
-            msg = 'Firebase exception: {}'.format(str(e))
+            msg = 'emo exception: {}'.format(str(e))
             raise CustomException(message=msg)
 
     @classmethod
@@ -97,7 +97,7 @@ class LdService(object):
             else:
                 return CustomException(http_code=400, code='400', message="Không tìm thấy thiết bị")
         except Exception as e:
-            msg = 'Firebase exception: {}'.format(str(e))
+            msg = 'emo exception: {}'.format(str(e))
             raise CustomException(message=msg)
 
     @classmethod
@@ -113,7 +113,7 @@ class LdService(object):
 
             return DataResponse().success_response(data=device_ld)
         except Exception as e:
-            msg = 'Firebase exception: {}'.format(str(e))
+            msg = 'emo exception: {}'.format(str(e))
             raise CustomException(message=msg)
 
     @classmethod
@@ -128,7 +128,7 @@ class LdService(object):
                     device_ref.update({**device_ld.dict(), 'debt_month': 0})
             return DataResponse().success_response("")
         except Exception as e:
-            msg = 'Firebase exception: {}'.format(str(e))
+            msg = 'emo exception: {}'.format(str(e))
             raise CustomException(message=msg)
 
     @staticmethod
