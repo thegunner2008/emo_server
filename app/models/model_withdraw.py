@@ -17,5 +17,5 @@ class Withdraw(BareBaseModel):
     account_name = Column(String, nullable=False)
     status = Column(Enum(StatusWithdraw))
     user_id = Column(Integer, ForeignKey("user.id"))
-    user = relationship("User", back_populates='withdraws')
+    user = relationship("User")
 

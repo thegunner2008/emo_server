@@ -9,7 +9,7 @@ from app.core.security import encode_password
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
-from app.models.user_job import UserJob
+from app.models.model_transaction import Transaction
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_user import UserItemResponse, UserCreateRequest, UserUpdateMeRequest, UserUpdateRequest
 from app.services.srv_user import UserService
@@ -84,7 +84,7 @@ def detail(user_id: int) -> Any:
     try:
         exist_user = db.session.query(User).options(
             joinedload(User.current).joinedload(Current.job),
-            joinedload(User.jobs).joinedload(UserJob.job),
+            joinedload(User.jobs).joinedload(Transaction.job),
             joinedload(User.withdraws)
         ).filter(User.id == user_id).first()
 

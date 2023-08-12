@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
-from app.models import user_job
+from app.models import model_transaction
 from app.models.model_base import BareBaseModel
 
 
@@ -17,5 +17,4 @@ class Job(BareBaseModel):
     time = Column(Integer, nullable=False)
     money = Column(Integer, nullable=False)
     finish_at = Column(DateTime, nullable=True, default=None)
-    users = relationship("UserJob", back_populates='job')
     current = relationship("Current", back_populates='job', uselist=False)

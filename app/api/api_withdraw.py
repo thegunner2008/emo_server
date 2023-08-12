@@ -9,7 +9,7 @@ from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
 from app.models import User, Job
 from app.models.model_withdraw import Withdraw
-from app.models.user_job import UserJob
+from app.models.model_transaction import Transaction
 from app.schemas.sche_base import DataResponse
 
 from fastapi_sqlalchemy import db
@@ -45,8 +45,8 @@ def get_all(params: PaginationParams = Depends()) -> Any:
 @router.post("", dependencies=[Depends(login_required)])
 def post(withdraw: WithdrawCreate, current_user: User = Depends(UserService().get_current_user)):
     current_user_id = current_user.id
-    _query_total_money = db.session.query(func.sum(Job.money)).join(UserJob, Job.id == UserJob.job_id).filter(
-        UserJob.user_id == current_user_id)
+    _query_total_money = db.session.query(func.sum(Job.money)).join(Transaction, Job.id == Transaction.job_id).filter(
+        Transaction.user_id == current_user_id)
     _total_money = _query_total_money.scalar() or 0
 
     _query_total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(Withdraw.user_id == current_user_id)
