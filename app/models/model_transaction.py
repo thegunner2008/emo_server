@@ -10,7 +10,7 @@ class Transaction(BareBaseModel):
     job_id = Column(ForeignKey('job.id'), primary_key=True)
     user = relationship("User")
     job = relationship("Job")
-    money = Column(String)
+    money = Column(Integer)
     ip = Column(String)
     device_id = Column(String)
     time_int = Column(Integer, default=time_int_short())

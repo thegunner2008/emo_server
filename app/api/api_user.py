@@ -5,16 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi_sqlalchemy import db
 from sqlalchemy.orm import joinedload, contains_eager
 
-from app.core.security import encode_password
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
+from app.models.model_total import Total
 from app.models.model_transaction import Transaction
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_user import UserItemResponse, UserCreateRequest, UserUpdateMeRequest, UserUpdateRequest
 from app.services.srv_user import UserService
 from app.models import User, Current
-from starlette.requests import Request
 
 logger = logging.getLogger()
 router = APIRouter()
@@ -26,10 +25,10 @@ def get(params: PaginationParams = Depends()) -> Any:
     API Get list User
     """
     try:
-        _query = db.session.query(User).options(
-            joinedload(User.jobs)
-        )
-        users = paginate(model=User, query=_query, params=params)
+        query = db.session.query(User.id, User.email, User.user_name, User.full_name, User.created_at, User.updated_at,
+                                 User.last_login, Total.total, Total.count_transaction, Total.count_job,
+                                 Total.withdraw_count, Total.withdraw_total).outerjoin(Total, User.id == Total.user_id)
+        users = paginate(model=User, query=query, params=params)
         return users
     except Exception as e:
         return CustomException(http_code=400, code='400', message=str(e))
@@ -82,16 +81,16 @@ def detail(user_id: int) -> Any:
     API get Detail User
     """
     try:
-        exist_user = db.session.query(User).options(
-            joinedload(User.current).joinedload(Current.job),
-            joinedload(User.jobs).joinedload(Transaction.job),
-            joinedload(User.withdraws)
-        ).filter(User.id == user_id).first()
+        user = db.session.query(User.id, User.email, User.user_name, User.full_name, User.created_at,
+                                User.updated_at,
+                                User.last_login, Total.total, Total.count_transaction, Total.count_job,
+                                Total.withdraw_count, Total.withdraw_total) \
+            .filter(User.id == user_id).outerjoin(Total, Total.user_id == user_id).first()
 
-        if exist_user is None:
+        if user is None:
             raise Exception('User already exists')
 
-        return DataResponse().success_response(data=exist_user)
+        return DataResponse().success_response(data=user)
     except Exception as e:
         raise CustomException(http_code=400, code='400', message=str(e))
 

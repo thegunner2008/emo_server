@@ -52,3 +52,7 @@ class JobFinish(BaseModel):
     token: str
     value_page: str
     imei: str
+
+
+class JobCancel(BaseModel):
+    imei: str

@@ -1,13 +1,14 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.orm import joinedload
 
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
 from app.models import User, Job
+from app.models.model_total import Total
 from app.models.model_withdraw import Withdraw
 from app.models.model_transaction import Transaction
 from app.schemas.sche_base import DataResponse
@@ -45,18 +46,22 @@ def get_all(params: PaginationParams = Depends()) -> Any:
 @router.post("", dependencies=[Depends(login_required)])
 def post(withdraw: WithdrawCreate, current_user: User = Depends(UserService().get_current_user)):
     current_user_id = current_user.id
-    _query_total_money = db.session.query(func.sum(Job.money)).join(Transaction, Job.id == Transaction.job_id).filter(
+    query_total_money = db.session.query(func.sum(Job.money)).join(Transaction, Job.id == Transaction.job_id).filter(
         Transaction.user_id == current_user_id)
-    _total_money = _query_total_money.scalar() or 0
+    total_money = query_total_money.scalar() or 0
 
-    _query_total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(Withdraw.user_id == current_user_id)
-    _total_withdraw = _query_total_withdraw.scalar() or 0
-    if _total_money < (_total_withdraw + withdraw.money):
+    query_total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(Withdraw.user_id == current_user_id)
+    total_withdraw = query_total_withdraw.scalar() or 0
+    if total_money < (total_withdraw + withdraw.money):
         return CustomException(http_code=400, code='400', message='Yêu cầu vượt quá tổng số tiền')
 
+    count = db.session.query(Withdraw).filter(Withdraw.user_id == current_user_id).count()
     withdraw_db = Withdraw(user_id=current_user.id, **withdraw.dict())
-    print(Withdraw)
     db.session.add(withdraw_db)
+    ex_update_total = update(Total).where(Total.user_id == current_user_id).values(
+        withdraw_total=total_withdraw + withdraw.money,
+        withdraw_count=count)
+    db.session.execute(ex_update_total)
     db.session.commit()
     db.session.refresh(withdraw_db)
     return DataResponse().success_response({})

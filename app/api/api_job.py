@@ -2,18 +2,15 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 
-from app.enum.enum_withdraw import StatusWithdraw
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required
 from app.helpers.paging import Page, PaginationParams, paginate
-from app.models import User, Withdraw
-from app.models.model_transaction import Transaction
+from app.models import User
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate
+from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
-from sqlalchemy import func
 
 from app.services.srv_job import JobService
 from app.services.srv_user import UserService
@@ -34,6 +31,12 @@ def start(job_id: int, current_id: int, current_user: User = Depends(UserService
 @router.post("/finish", dependencies=[Depends(login_required)])
 def finish(request: Request, job_finish: JobFinish):
     res = JobService().finish(request, job_finish)
+    return DataResponse().success_response(data=res)
+
+
+@router.post("/cancel", dependencies=[Depends(login_required)])
+def cancel(request: Request, job_cancel: JobCancel, current_user: User = Depends(UserService().get_current_user)):
+    res = JobService().cancel(request, user_id=current_user.id, job_cancel=job_cancel)
     return DataResponse().success_response(data=res)
 
 
@@ -79,22 +82,3 @@ def delete(job_id: int):
         return DataResponse().success_response("Thành công")
     else:
         return CustomException(http_code=400, code='400', message="Không tìm thấy dữ liệu")
-
-
-@router.get("/done", dependencies=[Depends(login_required)])
-def get_job_done(current_user: User = Depends(UserService().get_current_user), params: PaginationParams = Depends()):
-    current_user_id = current_user.id
-    _query_total_money = db.session.query(func.sum(Job.money)).join(Transaction, Job.id == Transaction.job_id).filter(
-        Transaction.user_id == current_user_id)
-    _total_money = _query_total_money.scalar() or 0
-
-    _query_total_withdraw = db.session.query(func.sum(Withdraw.money)) \
-        .filter(Withdraw.user_id == current_user_id, Withdraw.status == StatusWithdraw.transferred)
-    _total_withdraw = _query_total_withdraw.scalar() or 0
-
-    _query_user_jobs = db.session.query(Job, Transaction.created_at).join(Transaction,
-                                                                          Job.id == Transaction.job_id).filter(
-        Transaction.user_id == current_user_id)
-
-    return {"total_money": _total_money, "total_withdraw": _total_withdraw,
-            **paginate(Job, _query_user_jobs, params).dict()}

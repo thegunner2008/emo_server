@@ -10,11 +10,12 @@ from app.helpers.exception_handler import CustomException
 from app.helpers.time_int import time_int_short_day
 from app.helpers.token_job import decode_token_job, create_token_job
 from app.models import Job, Current, User
+from app.models.model_total import Total
 from app.models.model_transaction import Transaction
 from sqlalchemy import and_, or_, update, select
 
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobFinish
+from app.schemas.sche_job import JobFinish, JobCancel
 
 cache = TTLCache(maxsize=1000, ttl=500)
 detal_time = 10
@@ -38,9 +39,11 @@ class JobService(object):
         job_ids = db.session.query(Transaction.job_id).filter(
             and_(Transaction.device_id == device_id, Transaction.time_int >= time_int_short_day())).all()
 
+        job_ids = [job_id[0] for job_id in job_ids]
+
         first_job = db.session.query(Job).filter(
             and_(Job.id.notin_(job_ids), Job.count < Job.total,
-                 or_(Job.finish_at >= datetime.now(), Job.finish_at.is_(None)))).first()
+                 or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now()))).first()
         if not first_job:
             return DataResponse().success_response(data={
                 "current_id": -1,
@@ -63,7 +66,7 @@ class JobService(object):
         job_db = db.session.query(Job).filter_by(id=job_id).first()
         user_db = db.session.query(User).filter_by(id=user_id).first()
         if not job_db or not user_db:
-            return CustomException(http_code=400, code='400', message="job or user not found")
+            raise CustomException(http_code=400, code='400', message="job or user not found")
         current_time = datetime.now()
         cache[user_id] = current_time
         return DataResponse().success_response({
@@ -76,27 +79,50 @@ class JobService(object):
         token_job = decode_token_job(token=job_finish.token)
         job_db = db.session.query(Job).filter_by(id=token_job.job_id).first()
         current_db = db.session.query(Current).filter_by(id=token_job.current_id).first()
+
         if not job_db or not current_db:
-            return CustomException(http_code=400, code='400', message="job or current not found")
-        if job_finish.value_page != job_db.value_page or job_db.value_page is None:
-            return CustomException(http_code=400, code='400', message="value page is not correct")
-        if not cache.get(token_job.user_id):
-            return CustomException(http_code=400, code='400', message=f"Time out")
+            error = "job or current not found"
+        elif job_finish.value_page != job_db.value_page or job_db.value_page is None:
+            error = "value page is not correct"
+        elif not cache.get(token_job.user_id) or not check_time(user_id=token_job.user_id, job_time=job_db.time):
+            error = "Time out"
+        else:
+            error = None
+        if error:
+            raise CustomException(http_code=400, code='400', message=error)
 
-        current_time = datetime.now()
-        diff = current_time - cache.get(token_job.user_id)
-        diff_int = int(diff.total_seconds())
-        if not (diff_int - detal_time < job_db.time < diff_int + detal_time):
-            return CustomException(http_code=400, code='400', message=f"Time out + {diff_int}")
-
-        user_job = Transaction(user_id=token_job.user_id, job_id=token_job.job_id, ip=request.client.host,
-                               imei=job_finish.imei)
-        db.session.add(user_job)
+        transaction = Transaction(user_id=token_job.user_id, job_id=token_job.job_id, ip=request.client.host,
+                                  device_id=job_finish.imei, money=job_db.money)
+        db.session.add(transaction)
         db.session.delete(current_db)
         db.session.commit()
-        db.session.refresh(user_job)
+        db.session.refresh(transaction)
 
-        # Update the count column of Job
-        stmt = update(Job).where(Job.id == user_job.job_id).values(count=Job.count + 1)
-        db.session.execute(stmt)
+        transactions = db.session.query(Transaction).filter_by(user_id=token_job.user_id).all()
+        qr = update(Job).where(Job.id == transaction.job_id).values(count=Job.count + 1)
+        db.session.execute(qr)
+        qr1 = update(Total).where(Total.user_id == token_job.user_id) \
+            .values(count_transaction=transactions.__len__(), total=sum(int(e.money) for e in transactions),
+                    count_job=set(e.job_id for e in transactions).__len__())
+        db.session.execute(qr1)
         db.session.commit()
+        return DataResponse().success_response(data={})
+
+    @staticmethod
+    def cancel(request: Request, user_id: int, job_cancel: JobCancel) -> dict[str, Any]:
+        current_db = db.session.query(Current).filter_by(user_id=user_id).first()
+        if current_db:
+            db.session.delete(current_db)
+        transaction = Transaction(user_id=user_id, job_id=current_db.job_id, ip=request.client.host,
+                                  device_id=job_cancel.imei, money=0)
+        db.session.add(transaction)
+        db.session.commit()
+
+        return DataResponse().success_response({})
+
+
+def check_time(user_id: int, job_time: int) -> bool:
+    current_time = datetime.now()
+    diff = current_time - cache.get(user_id)
+    diff_int = int(diff.total_seconds())
+    return diff_int - detal_time < job_time < diff_int + detal_time
