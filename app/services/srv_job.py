@@ -18,6 +18,8 @@ from app.schemas.sche_base import DataResponse
 from app.schemas.sche_job import JobFinish, JobCancel
 
 cache = TTLCache(maxsize=1000, ttl=500)
+cacheCountJob = TTLCache(maxsize=1000, ttl=60 * 60 * 24)
+
 detal_time = 10
 
 
@@ -41,17 +43,20 @@ class JobService(object):
 
         job_ids = [job_id[0] for job_id in job_ids]
 
-        first_job = db.session.query(Job).filter(
+        jobs = db.session.query(Job).filter(
             and_(Job.id.notin_(job_ids), Job.count < Job.total,
-                 or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now()))).first()
-        if not first_job:
+                 or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now()))).all()
+
+        if len(jobs) == 0:
             return DataResponse().success_response(data={
                 "current_id": -1,
                 "job": None,
             })
+
+        min_job = min(jobs, key=lambda x: cacheCountJob.get(x.id, 0))
         current_db = Current(
             user_id=user_id,
-            job_id=first_job.id
+            job_id=min_job.id
         )
         db.session.add(current_db)
         db.session.commit()
@@ -106,6 +111,7 @@ class JobService(object):
                     count_job=set(e.job_id for e in transactions).__len__())
         db.session.execute(qr1)
         db.session.commit()
+        cacheCountJob[token_job.job_id] = cacheCountJob.get(token_job.job_id, 0) + 1
         return DataResponse().success_response(data={})
 
     @staticmethod
