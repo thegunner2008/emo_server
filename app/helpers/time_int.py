@@ -6,8 +6,8 @@ def now_int():
     return int(time.mktime(datetime.now().timetuple()))
 
 
-def time_int_short(dt: datetime = datetime.now()):
-    return int(dt.strftime("%Y%m%d%H"))
+def time_int_short(reset_day: int, dt: datetime = datetime.now()):
+    return int(dt.strftime("%Y%m%d%H")) + (reset_day - 1) * 100
 
 
 def time_int_short_day(dt: datetime = datetime.now()):

@@ -12,6 +12,8 @@ class JobBase(BaseModel):
     time: int
     money: str
     base_url: str
+    reset_day = int
+    factor = float
 
 
 class JobCreate(JobBase):

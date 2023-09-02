@@ -7,7 +7,7 @@ from fastapi import Request
 from fastapi_sqlalchemy import db
 
 from app.helpers.exception_handler import CustomException
-from app.helpers.time_int import time_int_short_day
+from app.helpers.time_int import time_int_short_day, time_int_short
 from app.helpers.token_job import decode_token_job, create_token_job
 from app.models import Job, Current, User
 from app.models.model_total import Total
@@ -28,6 +28,7 @@ class JobService(object):
 
     @staticmethod
     def get_current_job(request: Request, imei: str, user_id: int) -> dict[str, Any]:
+        # Nếu có job đang làm thì trả về job đó
         first_current = db.session.query(Current).filter_by(user_id=user_id).first()
         if first_current:
             db.session.query(Current).filter(Current.user_id == user_id).filter(Current.id != first_current.id).delete()
@@ -38,22 +39,32 @@ class JobService(object):
                     "job": first_current.job,
                 })
         device_id = imei if (imei and imei != "unknown") else request.client.host
-        job_ids = db.session.query(Transaction.job_id).filter(
-            and_(Transaction.device_id == device_id, Transaction.time_int >= time_int_short_day())).all()
 
-        job_ids = [job_id[0] for job_id in job_ids]
+        # Lấy danh sách job đã làm trong {reset_day} ngày
+        job_id_blocks = db.session.query(Transaction.job_id).filter(
+            and_(Transaction.device_id == device_id, Transaction.time_int >= time_int_short_day())).distinct().all()
 
+        job_id_blocks = set(job_id[0] for job_id in job_id_blocks)
+
+        # Lọc job chưa làm trong {reset_day} ngày, chưa hết hạn
         jobs = db.session.query(Job).filter(
-            and_(Job.id.notin_(job_ids), Job.count < Job.total,
-                 or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now()))).all()
+            and_(
+                Job.id.notin_(job_id_blocks),
+                or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now())
+            )
+        ).all()
+
+        # Lọc job đã làm < total trong ngày
+        jobs = list(filter(lambda e: e.total > cacheCountJob.get(e.id, 0), jobs))
 
         if len(jobs) == 0:
             return DataResponse().success_response(data={
                 "current_id": -1,
                 "job": None,
             })
+        # Chọn job có số lượng ít nhất trong ngày (* hệ số)
+        min_job = min(jobs, key=lambda e: cacheCountJob.get(e.id, 0) * e.factor)
 
-        min_job = min(jobs, key=lambda x: cacheCountJob.get(x.id, 0))
         current_db = Current(
             user_id=user_id,
             job_id=min_job.id
@@ -97,7 +108,8 @@ class JobService(object):
             raise CustomException(http_code=400, code='400', message=error)
 
         transaction = Transaction(user_id=token_job.user_id, job_id=token_job.job_id, ip=request.client.host,
-                                  device_id=job_finish.imei, money=job_db.money)
+                                  device_id=job_finish.imei, money=job_db.money,
+                                  time_int=time_int_short(reset_day=job_db.reset_day))
         db.session.add(transaction)
         db.session.delete(current_db)
         db.session.commit()
