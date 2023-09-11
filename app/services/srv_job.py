@@ -29,53 +29,56 @@ class JobService(object):
     @staticmethod
     def get_current_job(request: Request, imei: str, user_id: int) -> dict[str, Any]:
         # Nếu có job đang làm thì trả về job đó
-        first_current = db.session.query(Current).filter_by(user_id=user_id).first()
-        if first_current:
-            db.session.query(Current).filter(Current.user_id == user_id).filter(Current.id != first_current.id).delete()
-            db.session.commit()
-            return DataResponse().success_response(
-                data={
-                    "current_id": first_current.id,
-                    "job": first_current.job,
+        try:
+            first_current = db.session.query(Current).filter_by(user_id=user_id).first()
+            if first_current:
+                db.session.query(Current).filter(Current.user_id == user_id).filter(Current.id != first_current.id).delete()
+                db.session.commit()
+                return DataResponse().success_response(
+                    data={
+                        "current_id": first_current.id,
+                        "job": first_current.job,
+                    })
+            device_id = imei if (imei and imei != "unknown") else request.client.host
+
+            # Lấy danh sách job đã làm trong {reset_day} ngày
+            job_id_blocks = db.session.query(Transaction.job_id).filter(
+                and_(Transaction.device_id == device_id, Transaction.time_int >= time_int_short_day())).distinct().all()
+
+            job_id_blocks = set(job_id[0] for job_id in job_id_blocks)
+
+            # Lọc job chưa làm trong {reset_day} ngày, chưa hết hạn
+            jobs = db.session.query(Job).filter(
+                and_(
+                    Job.id.notin_(job_id_blocks),
+                    or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now())
+                )
+            ).all()
+
+            # Lọc job đã làm < total trong ngày
+            jobs = list(filter(lambda e: e.total > cacheCountJob.get(e.id, 0), jobs))
+
+            if len(jobs) == 0:
+                return DataResponse().success_response(data={
+                    "current_id": -1,
+                    "job": None,
                 })
-        device_id = imei if (imei and imei != "unknown") else request.client.host
+            # Chọn job có số lượng ít nhất trong ngày (* hệ số)
+            min_job = min(jobs, key=lambda e: cacheCountJob.get(e.id, 0) * e.factor)
 
-        # Lấy danh sách job đã làm trong {reset_day} ngày
-        job_id_blocks = db.session.query(Transaction.job_id).filter(
-            and_(Transaction.device_id == device_id, Transaction.time_int >= time_int_short_day())).distinct().all()
-
-        job_id_blocks = set(job_id[0] for job_id in job_id_blocks)
-
-        # Lọc job chưa làm trong {reset_day} ngày, chưa hết hạn
-        jobs = db.session.query(Job).filter(
-            and_(
-                Job.id.notin_(job_id_blocks),
-                or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now())
+            current_db = Current(
+                user_id=user_id,
+                job_id=min_job.id
             )
-        ).all()
-
-        # Lọc job đã làm < total trong ngày
-        jobs = list(filter(lambda e: e.total > cacheCountJob.get(e.id, 0), jobs))
-
-        if len(jobs) == 0:
+            db.session.add(current_db)
+            db.session.commit()
+            db.session.refresh(current_db)
             return DataResponse().success_response(data={
-                "current_id": -1,
-                "job": None,
+                "current_id": current_db.id,
+                "job": current_db.job,
             })
-        # Chọn job có số lượng ít nhất trong ngày (* hệ số)
-        min_job = min(jobs, key=lambda e: cacheCountJob.get(e.id, 0) * e.factor)
-
-        current_db = Current(
-            user_id=user_id,
-            job_id=min_job.id
-        )
-        db.session.add(current_db)
-        db.session.commit()
-        db.session.refresh(current_db)
-        return DataResponse().success_response(data={
-            "current_id": current_db.id,
-            "job": current_db.job,
-        })
+        except Exception as e:
+            raise CustomException(http_code=400, code='400', message=f"error {e}")
 
     @staticmethod
     def start(job_id: int, user_id: int, current_id: int) -> dict[str, Any]:
