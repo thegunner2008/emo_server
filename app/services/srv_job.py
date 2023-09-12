@@ -27,8 +27,8 @@ class JobService(object):
     __instance = None
 
     @staticmethod
-    def check_status() -> dict[TTLCache[Any, Any], str]:
-        return {cache: str(cache), cacheCountJob: str(cacheCountJob)}
+    def check_status():
+        return {"cache": cache, "cacheCountJob": cacheCountJob}
 
     @staticmethod
     def get_current_job(request: Request, imei: str, user_id: int) -> dict[str, Any]:
