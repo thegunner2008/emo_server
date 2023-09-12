@@ -27,6 +27,10 @@ class JobService(object):
     __instance = None
 
     @staticmethod
+    def check_status() -> dict[TTLCache[Any, Any], str]:
+        return {cache: str(cache), cacheCountJob: str(cacheCountJob)}
+
+    @staticmethod
     def get_current_job(request: Request, imei: str, user_id: int) -> dict[str, Any]:
         # Nếu có job đang làm thì trả về job đó
         try:

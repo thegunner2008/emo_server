@@ -82,3 +82,8 @@ def delete(job_id: int):
         return DataResponse().success_response("Thành công")
     else:
         return CustomException(http_code=400, code='400', message="Không tìm thấy dữ liệu")
+
+
+@router.get("/check")
+def check():
+    return JobService().check_status()
