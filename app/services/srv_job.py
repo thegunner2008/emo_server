@@ -7,20 +7,20 @@ from fastapi import Request
 from fastapi_sqlalchemy import db
 
 from app.helpers.exception_handler import CustomException
-from app.helpers.time_int import time_int_short_day, time_int_short
+from app.helpers.time_int import time_int_short_day, time_int_short, now_int
 from app.helpers.token_job import decode_token_job, create_token_job
 from app.models import Job, Current, User
 from app.models.model_total import Total
 from app.models.model_transaction import Transaction
 from sqlalchemy import and_, or_, update, select
 
+from app.redis import set_time_redis, get_time_redis, get_redis, get_count_redis, set_count_redis
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_job import JobFinish, JobCancel
 
-cache = TTLCache(maxsize=1000, ttl=500)
-cacheCountJob = TTLCache(maxsize=1000, ttl=60 * 60 * 24)
-
 detal_time = 10
+
+r = get_redis()
 
 
 class JobService(object):
@@ -28,7 +28,23 @@ class JobService(object):
 
     @staticmethod
     def check_status():
-        return {"cache": cache, "cacheCountJob": cacheCountJob}
+        keys = r.keys('*')
+        values_dict = {}
+        for key in keys:
+            typ = r.type(key)
+            va = None
+            if typ == "string":
+                va = r.get(key)
+            if typ == "hash":
+                va = r.hgetall(key)
+            if typ == "zset":
+                va = r.zrange(key, 0, -1)
+            if typ == "list":
+                va = r.lrange(key, 0, -1)
+            if typ == "set":
+                va = r.smembers(key)
+            values_dict[key] = va
+        return values_dict
 
     @staticmethod
     def get_current_job(request: Request, imei: str, user_id: int) -> dict[str, Any]:
@@ -36,7 +52,8 @@ class JobService(object):
         try:
             first_current = db.session.query(Current).filter_by(user_id=user_id).first()
             if first_current:
-                db.session.query(Current).filter(Current.user_id == user_id).filter(Current.id != first_current.id).delete()
+                db.session.query(Current).filter(Current.user_id == user_id).filter(
+                    Current.id != first_current.id).delete()
                 db.session.commit()
                 return DataResponse().success_response(
                     data={
@@ -60,7 +77,7 @@ class JobService(object):
             ).all()
 
             # Lọc job đã làm < total trong ngày
-            jobs = list(filter(lambda e: e.total > cacheCountJob.get(e.id, 0), jobs))
+            jobs = list(filter(lambda e: e.total > get_count_redis(e.id), jobs))
 
             if len(jobs) == 0:
                 return DataResponse().success_response(data={
@@ -68,7 +85,7 @@ class JobService(object):
                     "job": None,
                 })
             # Chọn job có số lượng ít nhất trong ngày (* hệ số)
-            min_job = min(jobs, key=lambda e: cacheCountJob.get(e.id, 0) * e.factor)
+            min_job = min(jobs, key=lambda e: get_count_redis(e.id) * e.factor)
 
             current_db = Current(
                 user_id=user_id,
@@ -90,8 +107,7 @@ class JobService(object):
         user_db = db.session.query(User).filter_by(id=user_id).first()
         if not job_db or not user_db:
             raise CustomException(http_code=400, code='400', message="job or user not found")
-        current_time = datetime.now()
-        cache[user_id] = current_time
+        set_time_redis(user_id=user_id)
         return DataResponse().success_response({
             "token": create_token_job(job_id=job_id, user_id=user_id, current_id=current_id),
             "key": job_db.key_page,
@@ -107,7 +123,7 @@ class JobService(object):
             error = "job or current not found"
         elif job_finish.value_page != job_db.value_page or job_db.value_page is None:
             error = "value page is not correct"
-        elif not cache.get(token_job.user_id) or not check_time(user_id=token_job.user_id, job_time=job_db.time):
+        elif check_time_out(user_id=token_job.user_id, job_time=job_db.time):
             error = "Time out"
         else:
             error = None
@@ -130,7 +146,7 @@ class JobService(object):
                     count_job=set(e.job_id for e in transactions).__len__())
         db.session.execute(qr1)
         db.session.commit()
-        cacheCountJob[token_job.job_id] = cacheCountJob.get(token_job.job_id, 0) + 1
+        set_count_redis(job_id=token_job.job_id)
         return DataResponse().success_response(data={})
 
     @staticmethod
@@ -146,8 +162,9 @@ class JobService(object):
         return DataResponse().success_response({})
 
 
-def check_time(user_id: int, job_time: int) -> bool:
-    current_time = datetime.now()
-    diff = current_time - cache.get(user_id)
-    diff_int = int(diff.total_seconds())
-    return diff_int - detal_time < job_time < diff_int + detal_time
+def check_time_out(user_id: int, job_time: int) -> bool:
+    if not get_time_redis(user_id):
+        return True
+    current_time = now_int()
+    diff = current_time - get_time_redis(user_id)
+    return not (diff - detal_time < job_time < diff + detal_time)

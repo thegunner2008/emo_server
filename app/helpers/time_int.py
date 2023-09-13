@@ -14,6 +14,10 @@ def time_int_short_day(dt: datetime = datetime.now()):
     return int(dt.strftime("%Y%m%d")) * 100
 
 
+def time_int_day(dt: datetime = datetime.now()):
+    return int(dt.strftime("%Y%m%d"))
+
+
 def add_time(start: datetime, delta_time: timedelta):
     return int(time.mktime((start + delta_time).timetuple()))
 

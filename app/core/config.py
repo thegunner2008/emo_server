@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # Token expired after 7 days
     SECURITY_ALGORITHM = 'HS256'
     LOGGING_CONFIG_FILE = os.path.join(BASE_DIR, 'logging.ini')
+    REDIS_HOST = os.getenv('REDIS_HOST')
+    REDIS_PORT = os.getenv('REDIS_PORT')
 
 
 settings = Settings()
