@@ -55,9 +55,10 @@ def get_count_redis(job_id):
     value = r.get(f"{COUNT}_{job_id}")
     if value is None:
         return 0
-    day_int_value = value.split('_')[0]
-    count_value = value.split('_')[1]
+    value = str(value)
+    day_int_value = int(value.split('_')[0])
+    count_value = int(value.split('_')[1])
     if day_int_value == time_int_day():
-        return int(count_value)
+        return count_value
     else:
         return 0
