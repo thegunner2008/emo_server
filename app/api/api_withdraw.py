@@ -15,7 +15,7 @@ from app.schemas.sche_base import DataResponse
 
 from fastapi_sqlalchemy import db
 
-from app.schemas.sche_withdraw import WithdrawCreate, WithdrawReply
+from app.schemas.sche_withdraw import WithdrawCreate, WithdrawPay
 from app.services.srv_user import UserService
 
 router = APIRouter()
@@ -67,11 +67,15 @@ def post(withdraw: WithdrawCreate, current_user: User = Depends(UserService().ge
     return DataResponse().success_response({})
 
 
-@router.post("/reply", dependencies=[Depends(PermissionRequired('admin'))])
-def reply(withdraw: WithdrawReply):
-    user_db = db.session.query(User).filter_by(id=withdraw.user_id).first()
+@router.post("/pay", dependencies=[Depends(PermissionRequired('admin'))])
+def reply(withdraw_pay: WithdrawPay):
+    user_db = db.session.query(User).filter_by(id=withdraw_pay.user_id).first()
     if not user_db:
         return CustomException(http_code=400, code='400', message="user not found")
-    db.session.query(Withdraw).filter_by(id=withdraw.id).update(**withdraw.dict())
+    first = db.session.query(Withdraw).filter_by(id=withdraw_pay.id).first()
+    if not first:
+        return CustomException(http_code=400, code='400', message="withdraw not found")
+    first.status = withdraw_pay.status
+    first.reply = withdraw_pay.reply
     db.session.commit()
     return DataResponse().success_response({})

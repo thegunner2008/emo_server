@@ -12,7 +12,7 @@ class Withdraw(BareBaseModel):
     image_clue = Column(String)
     money = Column(Integer, nullable=False)
     withdraw_method = Column(String, nullable=False)
-    bank_name = Column(String, nullable=False)
+    bank_key = Column(Integer, nullable=False)
     number_account = Column(String, nullable=False)
     account_name = Column(String, nullable=False)
     status = Column(Enum(StatusWithdraw))
