@@ -85,7 +85,7 @@ class JobService(object):
                     "job": None,
                 })
             # Chọn job có số lượng ít nhất trong ngày (* hệ số)
-            min_job = min(jobs, key=lambda e: get_count_redis(e.id) * e.factor)
+            min_job = min(jobs, key=lambda x: get_count_redis(x.id) * (x.factor or 1))
 
             current_db = Current(
                 user_id=user_id,
