@@ -9,7 +9,7 @@ $ sudo -u postgres psql
 // Clone project & run
 $ cd fastapi-base
 $ virtualenv -p python3 .venv
-$ source .venv/bin/activate
+$ source .venv/bin/activate // source myenv/bin/activate
 $ pip install -r requirements.txt
 $ cp env.example .env       // Recheck SQL_DATABASE_URL ở bước này
 $ alembic upgrade head

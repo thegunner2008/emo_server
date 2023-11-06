@@ -44,6 +44,7 @@ class UserUpdateMeRequest(BaseModel):
     full_name: Optional[str]
     email: Optional[EmailStr]
     password: Optional[str]
+    is_active: Optional[bool] = True
 
 
 class UserUpdateRequest(BaseModel):

@@ -89,6 +89,7 @@ class UserService(object):
         current_user.email = current_user.email if data.email is None else data.email
         current_user.hashed_password = current_user.hashed_password if data.password is None else get_password_hash(
             data.password)
+        current_user.is_active = current_user.is_active if data.is_active is None else data.is_active
         db.session.commit()
         return current_user
 
