@@ -8,4 +8,4 @@ router = APIRouter()
 
 @router.get("", response_model=ResponseSchemaBase)
 async def get():
-    return {"message": "Health check success - 06/11 " + str(time_int_short_day()) + " - " + str(time_int_short(reset_day=1))}
+    return {"message": "Health check success - 07/11 "}
