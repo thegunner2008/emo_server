@@ -6,16 +6,19 @@ def now_int():
     return int(time.mktime(datetime.now().timetuple()))
 
 
-def time_int_short(reset_day: int, dt: datetime = datetime.now()):
-    return int(dt.strftime("%Y%m%d%H")) + (reset_day - 1) * 100
+def time_int_short(reset_day: int, dt: datetime):
+    new_dt = dt or datetime.now()
+    return int(new_dt.strftime("%Y%m%d%H")) + (reset_day - 1) * 100
 
 
-def time_int_short_day(dt: datetime = datetime.now()):
-    return int(dt.strftime("%Y%m%d")) * 100
+def time_int_short_day(dt: datetime):
+    new_dt = dt or datetime.now()
+    return int(new_dt.strftime("%Y%m%d")) * 100
 
 
-def time_int_day(dt: datetime = datetime.now()):
-    return int(dt.strftime("%Y%m%d"))
+def time_int_day(dt: datetime):
+    new_dt = dt or datetime.now()
+    return int(new_dt.strftime("%Y%m%d"))
 
 
 def add_time(start: datetime, delta_time: timedelta):
