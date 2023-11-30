@@ -61,6 +61,9 @@ class JobService(object):
                             "current_id": first_current.id,
                             "job": first_current.job,
                         })
+                else:
+                    db.session.delete(first_current)
+                    db.session.commit()
             device_id = imei if (imei and imei != "unknown") else request.client.host
 
             # Lấy danh sách job đã làm trong {reset_day} ngày
