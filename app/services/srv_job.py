@@ -155,7 +155,7 @@ class JobService(object):
         if current_db:
             db.session.delete(current_db)
         transaction = Transaction(user_id=user_id, job_id=current_db.job_id, ip=request.client.host,
-                                  device_id=job_cancel.imei, money=0)
+                                  device_id=job_cancel.imei, money=0, time_int=time_int_short(reset_day=1))
         db.session.add(transaction)
         db.session.commit()
 

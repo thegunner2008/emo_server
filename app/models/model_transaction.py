@@ -13,6 +13,6 @@ class Transaction(BareBaseModel):
     money = Column(Integer)
     ip = Column(String)
     device_id = Column(String)
-    time_int = Column(Integer, default=time_int_short(reset_day=1))
+    time_int = Column(Integer)
 
     Index('idx_transaction_device_time', device_id, time_int)
