@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.enum.enum_withdraw import StatusWithdraw
-from app.helpers.login_manager import login_required
+from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import PaginationParams, paginate
 from app.models import User, Withdraw
 from app.models.model_transaction import Transaction
@@ -10,6 +10,7 @@ from app.models.model_job import Job
 from fastapi_sqlalchemy import db
 from sqlalchemy import func
 
+from app.schemas.sche_base import DataResponse
 from app.services.srv_user import UserService
 
 router = APIRouter()
@@ -39,3 +40,11 @@ def get_transactions(current_user: User = Depends(UserService().get_current_user
         "total_withdraw": total_withdraw,
         **paginate(Transaction, query_jobs, params).dict()
     }
+
+
+@router.get("/all", dependencies=[Depends(PermissionRequired('admin'))])
+def get_transactions(job_id: str):
+    query_jobs = db.session.query(Transaction).filter(
+        Transaction.job_id == job_id
+    )
+    return DataResponse().success_response(data=query_jobs.all())
