@@ -55,7 +55,8 @@ class JobService(object):
                 db.session.query(Current).filter(Current.user_id == user_id).filter(
                     Current.id != first_current.id).delete()
                 db.session.commit()
-                if first_current.job.finish_at is None or first_current.job.finish_at >= datetime.now():
+                if first_current.job_id and (
+                        first_current.job.finish_at is None or first_current.job.finish_at >= datetime.now()):
                     return DataResponse().success_response(
                         data={
                             "current_id": first_current.id,

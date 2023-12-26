@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
-from app.helpers.time_int import time_int_short
 from app.models.model_base import BareBaseModel
 
 

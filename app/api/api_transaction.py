@@ -8,7 +8,7 @@ from app.models.model_transaction import Transaction
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from app.schemas.sche_base import DataResponse
 from app.services.srv_user import UserService
@@ -39,6 +39,31 @@ def get_transactions(current_user: User = Depends(UserService().get_current_user
         "total_money": total_money,
         "total_withdraw": total_withdraw,
         **paginate(Transaction, query_jobs, params).dict()
+    }
+
+
+@router.get("/by_time", dependencies=[Depends(login_required)])
+def get_transactions_by_times(start: int, end: int, current_user: User = Depends(UserService().get_current_user)):
+    current_user_id = current_user.id
+    total_money = db.session.query(func.sum(Transaction.money)).filter(
+        Transaction.user_id == current_user_id
+    ).scalar() or 0
+
+    total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(
+        Withdraw.user_id == current_user_id,
+        Withdraw.status == StatusWithdraw.transferred
+    ).scalar() or 0
+
+    query_jobs = db.session.query(Transaction.id, Transaction.created_at, Transaction.money, Job).join(
+        Transaction, Transaction.job_id == Job.id
+    ).filter(
+        and_(Transaction.time_int <= end, Transaction.time_int >= start)
+    )
+
+    return {
+        "total_money": total_money,
+        "total_withdraw": total_withdraw,
+        "data": query_jobs.all()
     }
 
 
