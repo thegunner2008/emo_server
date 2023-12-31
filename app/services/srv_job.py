@@ -12,7 +12,7 @@ from app.helpers.token_job import decode_token_job, create_token_job
 from app.models import Job, Current, User
 from app.models.model_total import Total
 from app.models.model_transaction import Transaction
-from sqlalchemy import and_, or_, update, select
+from sqlalchemy import and_, or_, update, select, insert
 
 from app.redis import set_time_redis, get_time_redis, get_redis, get_count_redis, set_count_redis
 from app.schemas.sche_base import DataResponse
@@ -146,10 +146,16 @@ class JobService(object):
         transactions = db.session.query(Transaction).filter_by(user_id=token_job.user_id).all()
         qr = update(Job).where(Job.id == transaction.job_id).values(count=Job.count + 1)
         db.session.execute(qr)
-        qr1 = update(Total).where(Total.user_id == token_job.user_id) \
-            .values(count_transaction=transactions.__len__(), total=sum(int(e.money) for e in transactions),
-                    count_job=set(e.job_id for e in transactions).__len__())
-        db.session.execute(qr1)
+        first_total = db.session.query(Total).filter_by(user_id=token_job.user_id).first()
+        if first_total:
+            qr_total = update(Total).where(Total.user_id == token_job.user_id) \
+                .values(count_transaction=transactions.__len__(), total=sum(int(e.money) for e in transactions),
+                        count_job=set(e.job_id for e in transactions).__len__())
+        else:
+            qr_total = insert(Total).values(user_id=token_job.user_id, count_transaction=transactions.__len__(),
+                                            total=sum(int(e.money) for e in transactions),
+                                            count_job=set(e.job_id for e in transactions).__len__())
+        db.session.execute(qr_total)
         db.session.commit()
         set_count_redis(job_id=token_job.job_id)
         return DataResponse().success_response(data={})

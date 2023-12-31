@@ -9,11 +9,10 @@ from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
 from app.models.model_total import Total
-from app.models.model_transaction import Transaction
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_user import UserItemResponse, UserCreateRequest, UserUpdateMeRequest, UserUpdateRequest
 from app.services.srv_user import UserService
-from app.models import User, Current
+from app.models import User
 
 logger = logging.getLogger()
 router = APIRouter()

@@ -73,3 +73,22 @@ def get_transactions(job_id: str):
         Transaction.job_id == job_id
     )
     return DataResponse().success_response(data=query_jobs.all())
+
+
+@router.get("/all/by_time", dependencies=[Depends(PermissionRequired('admin'))])
+def get_transactions_by_times(start: int, end: int):
+    total_money = db.session.query(func.sum(Transaction.money)).scalar() or 0
+
+    total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(
+        Withdraw.status == StatusWithdraw.transferred
+    ).scalar() or 0
+
+    query_jobs = db.session.query(Transaction).filter(
+        and_(Transaction.time_int <= end, Transaction.time_int >= start)
+    )
+
+    return {
+        "total_money": total_money,
+        "total_withdraw": total_withdraw,
+        "data": query_jobs.all()
+    }
