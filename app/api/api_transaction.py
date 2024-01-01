@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import joinedload
 
 from app.enum.enum_withdraw import StatusWithdraw
 from app.helpers.login_manager import login_required, PermissionRequired
@@ -77,14 +78,14 @@ def get_transactions(job_id: str):
 
 @router.get("/all/by_time", dependencies=[Depends(PermissionRequired('admin'))])
 def get_transactions_by_times(start: int, end: int):
-    total_money = db.session.query(func.sum(Transaction.money)).scalar() or 0
+    total_money = 0
 
-    total_withdraw = db.session.query(func.sum(Withdraw.money)).filter(
-        Withdraw.status == StatusWithdraw.transferred
-    ).scalar() or 0
+    total_withdraw = 0
 
     query_jobs = db.session.query(Transaction).filter(
         and_(Transaction.time_int <= end, Transaction.time_int >= start)
+    ).options(
+        joinedload(Transaction.job)
     )
 
     return {
