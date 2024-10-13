@@ -31,21 +31,21 @@ def get_time_redis(user_id):
     return int(r.get(f"{TIME}_{user_id}"))
 
 
-def set_count_redis(job_id):
+def set_count_redis(job_id, count=1):
     global r
     if r is None:
         r = get_redis()
     value = r.hget(COUNT, job_id)
     day_int = time_int_day()
     if value is None:
-        r.set(f"{COUNT}_{job_id}", f'{day_int}_1')
+        r.set(f"{COUNT}_{job_id}", f'{day_int}_{count}')
     else:
         day_int_value = value.split('_')[0]
         count_value = value.split('_')[1]
         if day_int_value == day_int:
-            r.set(f"{COUNT}_{job_id}", f'{day_int}_{int(count_value) + 1}')
+            r.set(f"{COUNT}_{job_id}", f'{day_int}_{int(count_value) + count}')
         else:
-            r.set(f"{COUNT}_{job_id}", f'{day_int}_1')
+            r.set(f"{COUNT}_{job_id}", f'{day_int}_{count}')
 
 
 def get_count_redis(job_id):

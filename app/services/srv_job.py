@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
-from typing import Dict, Any, Union
+from collections import Counter
+from datetime import datetime
+from typing import Dict, Any
 
-from cachetools import TTLCache
 from fastapi import Request
 
 from fastapi_sqlalchemy import db
@@ -16,7 +16,7 @@ from sqlalchemy import and_, or_, update, select, insert
 
 from app.redis_ins import set_time_redis, get_time_redis, get_redis, get_count_redis, set_count_redis
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobFinish, JobCancel
+from app.schemas.sche_job import JobFinish, JobCancel, JobTool
 
 detal_time = 10
 
@@ -47,12 +47,19 @@ class JobService(object):
         return values_dict
 
     @staticmethod
+    def get_remain_jobs() -> Dict[str, Any]:
+        jobs = db.session.query(Job).all()
+        data = [{**job.__dict__, "count_today": set_count_redis(job.id)} for job in jobs]
+
+        return DataResponse().success_response(data=data)
+
+    @staticmethod
     def get_current_job(request: Request, imei: str, user_id: int) -> dict[str, Any]:
         # Nếu có job đang làm thì trả về job đó
         try:
             first_current = db.session.query(Current).filter_by(user_id=user_id).first()
             if first_current:
-                db.session.query(Current).filter(Current.user_id == user_id).filter(
+                db.session.query(Current).filter(Current.user_id == user_id).filter2(
                     Current.id != first_current.id).delete()
                 db.session.commit()
                 if first_current.job_id and (
@@ -159,6 +166,27 @@ class JobService(object):
         db.session.commit()
         set_count_redis(job_id=token_job.job_id)
         return DataResponse().success_response(data={})
+
+    @staticmethod
+    def finish_tool(job_tools: list[JobTool]) -> dict[str, Any]:
+
+        transactions = [Transaction(user_id=job_tool.user_id, job_id=job_tool.id, ip=job_tool.ip,
+                                    device_id=job_tool.imei,
+                                    time_int=time_int_short(reset_day=job_tool.reset_day)) for job_tool in job_tools]
+
+        if not transactions:
+            raise CustomException(http_code=400, code='400', message="job or user not found")
+
+        db.session.bulk_save_objects(transactions)
+        db.session.commit()
+        id_counts = Counter(item.id for item in transactions)
+        jobs = db.session.query(Job).filter(Job.id.in_(id_counts.keys())).all()
+        for job in jobs:
+            qr = update(Job).where(Job.id == job.id).values(count=Job.count + id_counts[job.id])
+            set_count_redis(job_id=job.id, count=id_counts[job.id])
+
+        db.session.commit()
+        return DataResponse().success_response(data=qr or {})
 
     @staticmethod
     def cancel(request: Request, user_id: int, job_cancel: JobCancel) -> dict[str, Any]:

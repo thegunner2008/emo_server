@@ -2,12 +2,13 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 
+from app.helpers.enums import UserRole
 from app.helpers.exception_handler import CustomException
-from app.helpers.login_manager import login_required
+from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
 from app.models import User
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel
+from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel, JobTool
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
@@ -23,9 +24,20 @@ def get_current(request: Request, device_id: str, current_user: User = Depends(U
     return JobService().get_current_job(request, device_id, current_user.id)
 
 
+@router.get("/remain_job", dependencies=[Depends(PermissionRequired(UserRole.ADMIN))])
+def get_remain_jobs():
+    return JobService().get_remain_jobs()
+
+
 @router.get("/start", dependencies=[Depends(login_required)])
 def start(job_id: int, current_id: int, current_user: User = Depends(UserService().get_current_user)):
     return JobService().start(job_id=job_id, user_id=current_user.id, current_id=current_id)
+
+
+@router.post("/finish_tool", dependencies=[Depends(PermissionRequired(UserRole.ADMIN))])
+def finish(job_tools: list[JobTool]):
+    res = JobService().finish_tool(job_tools)
+    return DataResponse().success_response(data=res)
 
 
 @router.post("/finish", dependencies=[Depends(login_required)])
@@ -50,7 +62,7 @@ def get(params: PaginationParams = Depends()) -> Any:
         raise CustomException(http_code=400, code='400', message=str(e))
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(PermissionRequired(UserRole.ADMIN))])
 def post(job: JobCreate):
     job_db = Job(**job.dict())
     db.session.add(job_db)

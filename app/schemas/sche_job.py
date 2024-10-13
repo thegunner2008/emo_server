@@ -56,5 +56,12 @@ class JobFinish(BaseModel):
     imei: str
 
 
+class JobTool(JobBase):
+    id: int
+    user_id: int
+    imei: str
+    ip: str
+
+
 class JobCancel(BaseModel):
     imei: str
