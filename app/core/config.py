@@ -11,7 +11,7 @@ db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
 host = os.getenv('DB_DOMAIN')
 
-url = f'postgresql+psycopg2://{db_user}:{db_password}@{host}/{db_name}'
+url = f'mysql+mysqlconnector://{db_user}:{db_password}@{host}/{db_name}'
 
 
 class Settings(BaseSettings):

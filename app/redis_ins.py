@@ -13,7 +13,7 @@ def get_redis():
     redis_host = settings.REDIS_HOST
     redis_port = settings.REDIS_PORT
     redis_password = None
-    return redis.Redis(host=redis_host, port=redis_port, password=redis_password)
+    return redis.StrictRedis(host=redis_host, port=redis_port, password=redis_password)
 
 
 def set_time_redis(user_id):

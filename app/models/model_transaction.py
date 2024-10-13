@@ -10,8 +10,8 @@ class Transaction(BareBaseModel):
     user = relationship("User")
     job = relationship("Job")
     money = Column(Integer)
-    ip = Column(String)
-    device_id = Column(String)
+    ip = Column(String(20))
+    device_id = Column(String(50))
     time_int = Column(Integer)
 
     Index('idx_transaction_device_time', device_id, time_int)

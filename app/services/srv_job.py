@@ -14,7 +14,7 @@ from app.models.model_total import Total
 from app.models.model_transaction import Transaction
 from sqlalchemy import and_, or_, update, select, insert
 
-from app.redis import set_time_redis, get_time_redis, get_redis, get_count_redis, set_count_redis
+from app.redis_ins import set_time_redis, get_time_redis, get_redis, get_count_redis, set_count_redis
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_job import JobFinish, JobCancel
 

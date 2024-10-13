@@ -6,15 +6,15 @@ from app.models.model_base import BareBaseModel
 
 
 class Withdraw(BareBaseModel):
-    description = Column(String)
-    reply = Column(String)
-    url_clue = Column(String)
-    image_clue = Column(String)
+    description = Column(String(255))
+    reply = Column(String(255))
+    url_clue = Column(String(255))
+    image_clue = Column(String(255))
     money = Column(Integer, nullable=False)
-    withdraw_method = Column(String, nullable=False)
+    withdraw_method = Column(String(150), nullable=False)
     bank_key = Column(Integer, nullable=False)
-    number_account = Column(String, nullable=False)
-    account_name = Column(String, nullable=False)
+    number_account = Column(String(150), nullable=False)
+    account_name = Column(String(150), nullable=False)
     status = Column(Enum(StatusWithdraw))
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship("User")

@@ -6,11 +6,11 @@ from app.models.model_base import BareBaseModel
 
 
 class User(BareBaseModel):
-    user_name = Column(String, nullable=False)
-    full_name = Column(String, index=True)
-    email = Column(String, unique=True, index=True)
+    user_name = Column(String(150), nullable=False)
+    full_name = Column(String(255), index=True)
+    email = Column(String(255), unique=True, index=True)
     hashed_password = Column(String(255))
     is_active = Column(Boolean, default=True)
-    role = Column(String, default='guest')
+    role = Column(String(20), default='guest')
     last_login = Column(DateTime)
     current = relationship('Current', back_populates='user', uselist=False)

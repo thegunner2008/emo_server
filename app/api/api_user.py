@@ -3,7 +3,6 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_sqlalchemy import db
-from sqlalchemy.orm import joinedload, contains_eager
 
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
