@@ -88,8 +88,8 @@ class JobService(object):
                 )
             ).all()
 
-            # Lọc job đã làm < total trong ngày
-            jobs = list(filter(lambda e: e.total > get_count_redis(e.id), jobs))
+            # Lọc job đã làm < max_day trong ngày
+            jobs = list(filter(lambda e: e.max_day > get_count_redis(e.id) and e.count < e.total, jobs))
 
             if len(jobs) == 0:
                 return DataResponse().success_response(data={

@@ -15,4 +15,3 @@ $ cp env.example .env       // Recheck SQL_DATABASE_URL ở bước này
 $ alembic upgrade head
 $ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-sudo ssh -p 3340 luan@103.154.244.98

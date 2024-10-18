@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 
-from app.models import model_transaction
 from app.models.model_base import BareBaseModel
 
 
@@ -10,6 +9,7 @@ class Job(BareBaseModel):
     image = Column(String(255), nullable=False)
     total = Column(Integer, nullable=False)
     count = Column(Integer, nullable=False)
+    max_day = Column(Integer, nullable=False)
     reset_day = Column(Integer, nullable=False)
     factor = Column(Float, nullable=False)
     base_url = Column(String(50), nullable=False)
@@ -20,3 +20,5 @@ class Job(BareBaseModel):
     money = Column(Integer, nullable=False)
     finish_at = Column(DateTime, nullable=True, default=None)
     current = relationship("Current", back_populates='job', uselist=False)
+    user_id = Column(ForeignKey('user.id'), nullable=False)
+    user = relationship("User")

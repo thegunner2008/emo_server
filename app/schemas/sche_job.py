@@ -6,8 +6,10 @@ from pydantic import BaseModel
 class JobBase(BaseModel):
     key_word: str
     image: str
+    max_day: int
     total: int
     count: int
+    user_id: int
     url: str
     time: int
     money: str
@@ -24,6 +26,7 @@ class JobCreate(JobBase):
 
 
 class JobUpdate(BaseModel):
+    max_day: int
     total: int
     time: int
     money: str

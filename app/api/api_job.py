@@ -24,7 +24,7 @@ def get_current(request: Request, device_id: str, current_user: User = Depends(U
     return JobService().get_current_job(request, device_id, current_user.id)
 
 
-@router.get("/remain_job", dependencies=[Depends(PermissionRequired(UserRole.ADMIN))])
+@router.get("/remain_job", dependencies=[Depends(PermissionRequired(UserRole.ADMIN.value))])
 def get_remain_jobs():
     return JobService().get_remain_jobs()
 
@@ -34,7 +34,7 @@ def start(job_id: int, current_id: int, current_user: User = Depends(UserService
     return JobService().start(job_id=job_id, user_id=current_user.id, current_id=current_id)
 
 
-@router.post("/finish_tool", dependencies=[Depends(PermissionRequired(UserRole.ADMIN))])
+@router.post("/finish_tool", dependencies=[Depends(PermissionRequired(UserRole.ADMIN.value))])
 def finish(job_tools: list[JobTool]):
     res = JobService().finish_tool(job_tools)
     return DataResponse().success_response(data=res)
@@ -62,9 +62,11 @@ def get(params: PaginationParams = Depends()) -> Any:
         raise CustomException(http_code=400, code='400', message=str(e))
 
 
-@router.post("", dependencies=[Depends(PermissionRequired(UserRole.ADMIN))])
-def post(job: JobCreate):
+@router.post("", dependencies=[Depends(login_required)])
+def post(job: JobCreate, current_user: User = Depends(UserService().get_current_user)):
     job_db = Job(**job.dict())
+    if current_user.role != UserRole.ADMIN.value or not job_db.user_id:
+        job_db.user_id = current_user.id
     db.session.add(job_db)
     db.session.commit()
     db.session.refresh(job_db)
