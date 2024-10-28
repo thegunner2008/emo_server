@@ -59,11 +59,13 @@ class JobFinish(BaseModel):
     imei: str
 
 
-class JobTool(JobBase):
+class JobTool(BaseModel):
     id: int
     user_id: int
     imei: str
     ip: str
+    description: str
+    created_at: Optional[datetime]
 
 
 class JobCancel(BaseModel):

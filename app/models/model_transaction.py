@@ -13,5 +13,6 @@ class Transaction(BareBaseModel):
     ip = Column(String(20))
     device_id = Column(String(50))
     time_int = Column(Integer)
+    description = Column(String(255))
 
     Index('idx_transaction_device_time', device_id, time_int)

@@ -171,8 +171,9 @@ class JobService(object):
     def finish_tool(job_tools: list[JobTool]) -> dict[str, Any]:
 
         transactions = [Transaction(user_id=job_tool.user_id, job_id=job_tool.id, ip=job_tool.ip,
-                                    device_id=job_tool.imei,
-                                    time_int=time_int_short(reset_day=job_tool.reset_day)) for job_tool in job_tools]
+                                    device_id=job_tool.imei, created_at=job_tool.created_at,
+                                    money=job_tool.money, description=job_tool.description,
+                                    time_int=time_int_short(reset_day=job_tool.reset_day, dt=job_tool.created_at)) for job_tool in job_tools]
 
         if not transactions:
             raise CustomException(http_code=400, code='400', message="job or user not found")

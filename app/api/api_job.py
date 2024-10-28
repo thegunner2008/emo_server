@@ -62,6 +62,15 @@ def get(params: PaginationParams = Depends()) -> Any:
         raise CustomException(http_code=400, code='400', message=str(e))
 
 
+@router.get("/{job_id}")
+def get(job_id: int):
+    job_db = db.session.query(Job).get(job_id)
+    if job_db:
+        return DataResponse().success_response(data=job_db)
+    else:
+        raise CustomException(http_code=404, code='404', message="Không tìm thấy dữ liệu")
+
+
 @router.post("", dependencies=[Depends(login_required)])
 def post(job: JobCreate, current_user: User = Depends(UserService().get_current_user)):
     job_db = Job(**job.dict())
