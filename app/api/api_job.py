@@ -6,7 +6,7 @@ from app.helpers.enums import UserRole
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
-from app.models import User
+from app.models import User, Price
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel, JobTool
 from app.models.model_job import Job
@@ -73,22 +73,37 @@ def get(job_id: int):
 
 @router.post("", dependencies=[Depends(login_required)])
 def post(job: JobCreate, current_user: User = Depends(UserService().get_current_user)):
+    is_admin = current_user.role == UserRole.ADMIN.value
     job_db = Job(**job.dict())
     if current_user.role != UserRole.ADMIN.value or not job_db.user_id:
         job_db.user_id = current_user.id
     db.session.add(job_db)
     db.session.commit()
     db.session.refresh(job_db)
-    return job_db
+    prices = db.session.query(Price.time, Price.money, Price.price).all() if is_admin \
+        else db.session.query(Price.time, Price.price).all()
+    return DataResponse().success_response(data={"job": job_db, "prices": prices})
 
 
-@router.put("/{job_id}")
-def put(job_id: int, job_update: JobUpdate):
+@router.put("/{job_id}",  dependencies=[Depends(login_required)])
+def put(job_id: int, job_update: JobUpdate, current_user: User = Depends(UserService().get_current_user)):
+    is_admin = current_user.role == UserRole.ADMIN.value
     job_db = db.session.query(Job).get(job_id)
     if job_db:
         job_data = job_update.dict(exclude_unset=True)
         for key, value in job_data.items():
             setattr(job_db, key, value)
+        if not is_admin:
+            prices = db.session.query(Price.time, Price.money, Price.price).all()
+            price_found = False
+            for price in prices:
+                if price.time == job_db.time:
+                    job_db.money = price.money
+                    job_db.price = price.price
+                    price_found = True
+                    break
+            if not price_found:
+                raise CustomException(http_code=400, code='400', message="Không tìm thấy giá")
         db.session.merge(job_db)
         db.session.commit()
         return DataResponse().success_response("Thành công")

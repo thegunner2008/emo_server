@@ -7,3 +7,4 @@ from app.models.model_current import Current
 from app.models.model_withdraw import Withdraw
 from app.models.model_transaction import Transaction
 from app.models.model_total import Total
+from app.models.model_price import Price
