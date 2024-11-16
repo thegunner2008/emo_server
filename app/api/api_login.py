@@ -14,8 +14,8 @@ router = APIRouter()
 
 
 class LoginRequest(BaseModel):
-    userName: str = 'test@gmail.vn'
-    password: str = 'secret123'
+    userName: str = 'admin'
+    password: str = ''
 
 
 @router.get("/get_all_users")

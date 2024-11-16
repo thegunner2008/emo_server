@@ -1,5 +1,6 @@
 from typing import Any
 
+from app.services.srv_google import GoogleService
 from fastapi import APIRouter, Depends, Request
 
 from app.helpers.enums import UserRole
@@ -8,7 +9,7 @@ from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
 from app.models import User, Price
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel, JobTool
+from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel, JobTool, JobPrepare
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
@@ -71,44 +72,40 @@ def get(job_id: int):
         raise CustomException(http_code=404, code='404', message="Không tìm thấy dữ liệu")
 
 
-@router.post("", dependencies=[Depends(login_required)])
+@router.post("/prepare", dependencies=[Depends(login_required)])
+def post(job: JobPrepare, current_user: User = Depends(UserService().get_current_user)):
+    is_admin = current_user.role == UserRole.ADMIN.value
+    index = GoogleService().get_google_index(job.key_search, job.url)
+    if index == -1:
+        raise CustomException(http_code=400, code='400', message="Không tìm thấy trang")
+
+    prices = db.session.query(Price).all() if is_admin else db.session.query(Price.time, Price.price).all()
+    return DataResponse().success_response(data={"prices": prices, "index": index})
+
+
+@router.post("/create", dependencies=[Depends(login_required)])
 def post(job: JobCreate, current_user: User = Depends(UserService().get_current_user)):
     is_admin = current_user.role == UserRole.ADMIN.value
     job_db = Job(**job.dict())
+    if not is_admin:
+        prices = db.session.query(Price.time, Price.money, Price.price).all()
+        price_found = False
+        for price in prices:
+            if price.time == job_db.time:
+                job_db.money = price.money
+                job_db.price = price.price
+                price_found = True
+                break
+        if not price_found:
+            raise CustomException(http_code=400, code='400', message="Không tìm thấy giá")
     if current_user.role != UserRole.ADMIN.value or not job_db.user_id:
         job_db.user_id = current_user.id
+
     db.session.add(job_db)
     db.session.commit()
     db.session.refresh(job_db)
-    prices = db.session.query(Price.time, Price.money, Price.price).all() if is_admin \
-        else db.session.query(Price.time, Price.price).all()
-    return DataResponse().success_response(data={"job": job_db, "prices": prices})
 
-
-@router.put("/{job_id}",  dependencies=[Depends(login_required)])
-def put(job_id: int, job_update: JobUpdate, current_user: User = Depends(UserService().get_current_user)):
-    is_admin = current_user.role == UserRole.ADMIN.value
-    job_db = db.session.query(Job).get(job_id)
-    if job_db:
-        job_data = job_update.dict(exclude_unset=True)
-        for key, value in job_data.items():
-            setattr(job_db, key, value)
-        if not is_admin:
-            prices = db.session.query(Price.time, Price.money, Price.price).all()
-            price_found = False
-            for price in prices:
-                if price.time == job_db.time:
-                    job_db.money = price.money
-                    job_db.price = price.price
-                    price_found = True
-                    break
-            if not price_found:
-                raise CustomException(http_code=400, code='400', message="Không tìm thấy giá")
-        db.session.merge(job_db)
-        db.session.commit()
-        return DataResponse().success_response("Thành công")
-    else:
-        raise CustomException(http_code=404, code='404', message="Không tìm thấy dữ liệu")
+    return DataResponse().success_response(data=job_db)
 
 
 @router.delete("")

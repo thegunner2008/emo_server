@@ -18,9 +18,15 @@ class JobBase(BaseModel):
     factor: float
 
 
+class JobPrepare(BaseModel):
+    key_search: str
+    url: str
+
+
 class JobCreate(JobBase):
     key_page: str
     value_page: str
+    price: int
     finish_at: Optional[datetime]
     pass
 
