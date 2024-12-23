@@ -173,8 +173,8 @@ class JobService(object):
 
         transactions = [Transaction(user_id=job_tool.user_id, job_id=job_tool.id, ip=job_tool.ip,
                                     device_id=job_tool.imei, created_at=job_tool.created_at,
-                                    money=job_tool.money, description=job_tool.description,
-                                    time_int=time_int_short(reset_day=job_tool.reset_day, dt=job_tool.created_at)) for job_tool in job_tools]
+                                    money=0, description=job_tool.description,
+                                    time_int=time_int_short(reset_day=1, dt=job_tool.created_at)) for job_tool in job_tools]
 
         if not transactions:
             raise CustomException(http_code=400, code='400', message="job or user not found")
@@ -188,7 +188,7 @@ class JobService(object):
             set_count_redis(job_id=job.id, count=id_counts[job.id])
 
         db.session.commit()
-        return DataResponse().success_response(data=qr or {})
+        return DataResponse().success_response(data="")
 
     @staticmethod
     def cancel(request: Request, user_id: int, job_cancel: JobCancel) -> dict[str, Any]:
