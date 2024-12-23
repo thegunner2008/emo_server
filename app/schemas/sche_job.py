@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class JobBase(BaseModel):
     key_word: str
-    image: str
+    is_stop: bool
     max_day: int
     total: int
     count: int
@@ -28,6 +28,26 @@ class JobCreate(JobBase):
     value_page: str
     price: int
     finish_at: Optional[datetime]
+    pass
+
+
+class JobEdit(BaseModel):
+    key_word: Optional[str] = None
+    is_stop: Optional[bool] = None
+    max_day: Optional[int] = None
+    total: Optional[int] = None
+    count: Optional[int] = None
+    user_id: Optional[int] = None
+    url: Optional[str] = None
+    time: Optional[int] = None
+    money: Optional[str] = None
+    base_url: Optional[str] = None
+    reset_day: Optional[int] = None
+    factor: Optional[float] = None
+    key_page: Optional[str] = None
+    value_page: Optional[str] = None
+    price: Optional[int] = None
+    finish_at: Optional[datetime] = None
     pass
 
 

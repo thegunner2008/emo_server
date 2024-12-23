@@ -6,7 +6,7 @@ from app.models.model_base import BareBaseModel
 
 class Job(BareBaseModel):
     key_word = Column(String(150), nullable=False)
-    image = Column(String(255), nullable=False)
+    is_stop = Column(Boolean, nullable=False, default=False)
     total = Column(Integer, nullable=False)
     count = Column(Integer, nullable=False)
     max_day = Column(Integer, nullable=False)

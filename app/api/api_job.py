@@ -7,9 +7,10 @@ from app.helpers.enums import UserRole
 from app.helpers.exception_handler import CustomException
 from app.helpers.login_manager import login_required, PermissionRequired
 from app.helpers.paging import Page, PaginationParams, paginate
-from app.models import User, Price
+from app.models import User, Price, Transaction
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel, JobTool, JobPrepare
+from app.schemas.sche_job import JobItemResponse, JobCreate, JobFinish, JobUpdate, JobCancel, JobTool, JobPrepare, \
+    JobEdit
 from app.models.model_job import Job
 
 from fastapi_sqlalchemy import db
@@ -63,6 +64,7 @@ def get(params: PaginationParams = Depends()) -> Any:
         raise CustomException(http_code=400, code='400', message=str(e))
 
 
+# Admin
 @router.get("/{job_id}")
 def get(job_id: int):
     job_db = db.session.query(Job).get(job_id)
@@ -76,11 +78,14 @@ def get(job_id: int):
 def post(job: JobPrepare, current_user: User = Depends(UserService().get_current_user)):
     is_admin = current_user.role == UserRole.ADMIN.value
     index = GoogleService().get_google_index(job.key_search, job.url)
-    if index == -1:
-        raise CustomException(http_code=400, code='400', message="Không tìm thấy trang")
 
     prices = db.session.query(Price).all() if is_admin else db.session.query(Price.time, Price.price).all()
     return DataResponse().success_response(data={"prices": prices, "index": index})
+
+
+@router.get("/prices", dependencies=[Depends(login_required)])
+def get_prices():
+    return db.session.query(Price).all()
 
 
 @router.post("/create", dependencies=[Depends(login_required)])
@@ -100,6 +105,8 @@ def post(job: JobCreate, current_user: User = Depends(UserService().get_current_
             raise CustomException(http_code=400, code='400', message="Không tìm thấy giá")
     if current_user.role != UserRole.ADMIN.value or not job_db.user_id:
         job_db.user_id = current_user.id
+    if job_db.time > 10:
+        job_db.time = 10
 
     db.session.add(job_db)
     db.session.commit()
@@ -108,10 +115,74 @@ def post(job: JobCreate, current_user: User = Depends(UserService().get_current_
     return DataResponse().success_response(data=job_db)
 
 
+@router.put("/{job_id}", dependencies=[Depends(login_required)])
+def put(job_id: int, job_edit: JobEdit, current_user: User = Depends(UserService().get_current_user)):
+    is_admin = current_user.role == UserRole.ADMIN.value
+    job_db = db.session.query(Job).get(job_id)
+    if not job_db:
+        raise CustomException(http_code=400, code='400', message="Không tìm thấy dữ liệu")
+    for field, value in job_edit.dict(exclude_unset=True).items():
+        setattr(job_db, field, value)
+    if not is_admin:
+        prices = db.session.query(Price.time, Price.money, Price.price).all()
+        price_found = False
+        for price in prices:
+            if price.time == job_db.time:
+                job_db.money = price.money
+                job_db.price = price.price
+                price_found = True
+                break
+        if not price_found:
+            raise CustomException(http_code=400, code='400', message="Không tìm thấy giá")
+    if current_user.role != UserRole.ADMIN.value or not job_db.user_id:
+        job_db.user_id = current_user.id
+    if job_db.time > 10:
+        job_db.time = 10
+
+    db.session.commit()
+    db.session.refresh(job_db)
+
+    return DataResponse().success_response(data=job_db)
+
+
+@router.post("/create_list", dependencies=[Depends(login_required)])
+def post(jobs: list[JobCreate], current_user: User = Depends(UserService().get_current_user)):
+    is_admin = current_user.role == UserRole.ADMIN.value
+    if not is_admin:
+        prices = db.session.query(Price.time, Price.money, Price.price).all()
+        if not prices:
+            raise CustomException(http_code=400, code='400', message="Không tìm thấy giá")
+
+    job_dbs = []
+    for job in jobs:
+        job_db = Job(**job.dict())
+        if not is_admin and prices:
+            for price in prices:
+                if price.time == job_db.time:
+                    job_db.money = price.money
+                    job_db.price = price.price
+                    break
+        if current_user.role != UserRole.ADMIN.value or not job_db.user_id:
+            job_db.user_id = current_user.id
+        if job_db.time > 10:
+            job_db.time = 10
+        job_dbs.append(job_db)
+
+    db.session.add_all(job_dbs)
+    db.session.commit()
+    db.session.refresh(job_dbs)
+
+    return DataResponse().success_response(data=job_dbs)
+
+
 @router.delete("")
 def delete(job_id: int):
     job_db = db.session.query(Job).get(job_id)
     if job_db:
+        transactions = db.session.query(Transaction).filter(Transaction.job_id == job_id).all()
+        for transaction in transactions:
+            db.session.delete(transaction)
+
         db.session.delete(job_db)
         db.session.commit()
         return DataResponse().success_response("Thành công")

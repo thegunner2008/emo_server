@@ -84,7 +84,8 @@ class JobService(object):
             jobs = db.session.query(Job).filter(
                 and_(
                     Job.id.notin_(job_id_blocks),
-                    or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now())
+                    or_(Job.finish_at.is_(None), Job.finish_at >= datetime.now()),
+                    Job.is_stop.is_(False),
                 )
             ).all()
 
