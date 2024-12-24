@@ -49,7 +49,7 @@ class JobService(object):
     @staticmethod
     def get_remain_jobs() -> Dict[str, Any]:
         jobs = db.session.query(Job).all()
-        data = [{**job.__dict__, "count_today": set_count_redis(job.id)} for job in jobs]
+        data = [{**job.__dict__, "count_today": get_count_redis(job.id)} for job in jobs]
 
         return DataResponse().success_response(data=data)
 
@@ -181,10 +181,10 @@ class JobService(object):
 
         db.session.bulk_save_objects(transactions)
         db.session.commit()
-        id_counts = Counter(item.id for item in transactions)
+        id_counts = Counter(item.job_id for item in transactions)
         jobs = db.session.query(Job).filter(Job.id.in_(id_counts.keys())).all()
         for job in jobs:
-            qr = update(Job).where(Job.id == job.id).values(count=Job.count + id_counts[job.id])
+            job.count += id_counts[job.id]
             set_count_redis(job_id=job.id, count=id_counts[job.id])
 
         db.session.commit()
