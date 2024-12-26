@@ -170,9 +170,8 @@ def post(jobs: list[JobCreate], current_user: User = Depends(UserService().get_c
 
     db.session.add_all(job_dbs)
     db.session.commit()
-    db.session.refresh(job_dbs)
 
-    return DataResponse().success_response(data=job_dbs)
+    return DataResponse().success_response(data="Thành công")
 
 
 @router.delete("")
